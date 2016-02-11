@@ -1,3 +1,5 @@
+# CS 3410 students who want a ready-made jar file should download it from our [course page](http://www.cs.cornell.edu/courses/cs3410/2016sp/resources.php).
+
 logisim-evolution
 =================
 Branch master : [![Build Status](https://travis-ci.org/reds-heig/logisim-evolution.svg?branch=master)](https://travis-ci.org/reds-heig/logisim-evolution)
@@ -27,11 +29,7 @@ We have decided to release this new Logisim version under the name logisim-evolu
 * ...
 
 ## How to install logisim-evolution
-You can find an already compiled **stable** version of the code [here](http://reds-data.heig-vd.ch/logisim-evolution/logisim-evolution.jar).
-To execute it, click on the downloaded file or type in a console
-```bash
-java -jar logisim-evolution.jar
-```
+CS 3410 students who want a ready-made jar file should download it from our [course page](http://www.cs.cornell.edu/courses/cs3410/2016sp/resources.php).
 
 You can also compile it by yourself by cloning the repository on your local machine. Once this is done, enter the directory and execute
 ```bash
