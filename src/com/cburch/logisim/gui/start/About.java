@@ -191,7 +191,7 @@ public class About {
 			g.setFont(copyrightFont);
 			fm = g.getFontMetrics();
 			str = Main.VERSION.rev();
-			g.drawString(str, x + IMAGE_WIDTH - fm.stringWidth(str), y + 50);
+			g.drawString(str, x + IMAGE_WIDTH - fm.stringWidth(str), y + 64);
 		}
 
 		private void drawWires(Graphics g, int x0, int y0) {
