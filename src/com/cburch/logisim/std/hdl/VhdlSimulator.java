@@ -102,7 +102,7 @@ public class VhdlSimulator implements CircuitListener {
 	private VhdlSimulatorVhdlTop vhdlTop = new VhdlSimulatorVhdlTop(this);
 	private VhdlSimulatorTclComp tclRun = new VhdlSimulatorTclComp(this);
 	private VhdlSimulatorTclBinder tclBinder;
-	private SocketClient socketClient = new SocketClient();
+	private SocketClient socketClient = null;
 
 	private Project project;
 
@@ -274,6 +274,8 @@ public class VhdlSimulator implements CircuitListener {
 	}
 
 	public SocketClient getSocketClient() {
+		if (socketClient == null)
+			socketClient = new SocketClient();
 		return socketClient;
 	}
 
