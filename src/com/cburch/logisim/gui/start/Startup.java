@@ -127,6 +127,9 @@ public class Startup implements AWTEventListener {
 			System.setProperty(
 					"com.apple.mrj.application.apple.menu.about.name",
 					"Logisim-evolution");
+			System.setProperty(
+					"apple.awt.application.name",
+					"Logisim-evolution");
 			System.setProperty("apple.laf.useScreenMenuBar", "true");
 
 			LocaleManager.setReplaceAccents(false);
@@ -420,6 +423,11 @@ public class Startup implements AWTEventListener {
 	}
 
 	private static void registerHandler() {
+		String prop = System.getProperty("os.name");
+		if (prop != null && prop.toLowerCase().contains("os x") && System.getProperty("mrj.version") == null) {
+			// MRJ is no longer present on OS X, but we want MRJAdapter to keep working for now.
+			System.setProperty("mrj.version", "99.0.0");
+		}
 		try {
 			Class<?> needed1 = Class.forName("com.apple.eawt.Application");
 			if (needed1 == null) {
