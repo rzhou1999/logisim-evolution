@@ -81,7 +81,7 @@
     <target name="package" depends="jar">
         <taskdef resource="com/sun/javafx/tools/ant/antlib.xml"
                  uri="javafx:com.sun.javafx.tools.ant"
-                 classpath=".:${java.home}/lib/ant-javafx.jar"/>
+                 classpath=".:${java.home}/../lib/ant-javafx.jar"/>
         <fx:deploy width="600" height="400"
                    embeddedWidth="100%" embeddedHeight="100%"
                    outdir="${basedir}/package"
@@ -97,7 +97,7 @@
             />
             <!-- Package only application and dependencies but not the JRE -->
             <!-- Unfortunately, removed in JDK 9. No workaround known yet. -->
-            <!-- <fx:platform basedir=""/> -->
+            <fx:platform basedir=""/>
 
             <fx:resources>
                 <fx:fileset dir="." includes="logisim-evolution.jar"/>
@@ -119,7 +119,6 @@
             <fx:bundleArgument arg="mac.CFBundleName" value="Logisim"/>
             <fx:bundleArgument arg="mac.CFBundleIdentifier" value="com.cburch.logisim"/>
             <fx:bundleArgument arg="win.menuGroup" value="Engineering"/>
-            <fx:bundleArgument arg="signBundle" value="false"/>
             <fx:bundleArgument arg="dropinResourcesRoot" value="${basedir}"/>
 
             <fx:preferences install="true"
