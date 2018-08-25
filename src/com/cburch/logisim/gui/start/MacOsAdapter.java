@@ -30,17 +30,19 @@
 
 package com.cburch.logisim.gui.start;
 
+import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-//MAC import java.io.File;
 
-import net.roydesign.event.ApplicationEvent;
-import net.roydesign.mac.MRJAdapter;
+import javax.swing.ImageIcon;
 
 //MAC import com.apple.eawt.Application;
 //MAC import com.apple.eawt.ApplicationAdapter;
 import com.cburch.logisim.gui.prefs.PreferencesFrame;
 import com.cburch.logisim.proj.ProjectActions;
+
+import net.roydesign.event.ApplicationEvent;
+import net.roydesign.mac.MRJAdapter;
 
 class MacOsAdapter { // MAC extends ApplicationAdapter {
 
@@ -79,19 +81,42 @@ class MacOsAdapter { // MAC extends ApplicationAdapter {
 		MRJAdapter.addAboutListener(myListener);
 	}
 
+	private static void setDockIcon() {
+		// Retrieve the Image object from the locally stored image file
+		// "frame" is the name of my JFrame variable, and "filename" is the name of the image file
+		java.net.URL imageURL = ClassLoader.getSystemResource("resources/logisim/img/logisim-icon-128.png");
+		Image image = new ImageIcon(imageURL).getImage();
+
+		try {
+		    // Replace: import com.apple.eawt.Application
+		    String className = "com.apple.eawt.Application";
+		    Class<?> cls = Class.forName(className);
+
+		    // Replace: Application application = Application.getApplication();
+		    Object application = cls.newInstance().getClass().getMethod("getApplication")
+		        .invoke(null);
+
+		    // Replace: application.setDockIconImage(image);
+		    application.getClass().getMethod("setDockIconImage", java.awt.Image.class)
+		        .invoke(application, image);
+		}
+		catch (Exception e) {
+		}
+	}
+
 	/*
 	 * MAC public void handleOpenFile(com.apple.eawt.ApplicationEvent event) {
 	 * Startup.doOpen(new File(event.getFilename())); }
-	 * 
+	 *
 	 * public void handlePrintFile(com.apple.eawt.ApplicationEvent event) {
 	 * Startup.doPrint(new File(event.getFilename())); }
-	 * 
+	 *
 	 * public void handlePreferences(com.apple.eawt.ApplicationEvent event) {
 	 * PreferencesFrame.showPreferences(); }
 	 */
 
 	public static void register() {
-		// MAC Application.getApplication().addApplicationListener(new
-		// MacOsAdapter());
+		// MAC Application.getApplication().addApplicationListener(new MacOsAdapter());
+		setDockIcon();
 	}
 }
