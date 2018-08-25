@@ -274,7 +274,7 @@ class XmlWriter {
 		doc.appendChild(ret);
 		ret.appendChild(doc
 				.createTextNode("\nThis file is intended to be "
-						+ "loaded by Logisim-evolution (https://github.com/reds-heig/logisim-evolution).\n"));
+						+ "loaded by Logisim-evolution (https://github.com/cs3410/logisim-evolution).\n"));
 		ret.setAttribute("version", "1.0");
 		ret.setAttribute("source", Main.VERSION_NAME);
 
