@@ -75,10 +75,23 @@
         <java jar="logisim-evolution.jar" fork="true"/>
     </target>
 
+    <target name="macos_info_plist">
+        <exec executable="/usr/libexec/PlistBuddy">
+            <arg value="-c"/>
+            <arg value="SET :CFBundleVersion ${app.version}"/>
+            <arg value="package/macosx/Info.plist"/>
+        </exec>
+        <exec executable="/usr/libexec/PlistBuddy">
+            <arg value="-c"/>
+            <arg value="SET :CFBundleShortVersionString ${app.version}"/>
+            <arg value="package/macosx/Info.plist"/>
+        </exec>
+    </target>
+
     <!-- Task package will fail on macOS High Sierra while generating a DMG
          due to bug JDK-8190758. Use task package_macos instead to generate
          an app bundle. -->
-    <target name="package" depends="jar">
+    <target name="package" depends="jar,macos_info_plist">
         <taskdef resource="com/sun/javafx/tools/ant/antlib.xml"
                  uri="javafx:com.sun.javafx.tools.ant"
                  classpath=".:${java.home}/../lib/ant-javafx.jar"/>
