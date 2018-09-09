@@ -60,6 +60,9 @@ package/Logisim-evolution.html
 package/Logisim-evolution.jnlp
 package/Logisim-evolution_browser.jnlp
 package/bundles/
+package/*.app
+package/*.dmg
+package/*.pkg
 
 # additional libraries
 !libs/*.jar
