@@ -123,15 +123,6 @@ public class Startup implements AWTEventListener {
 		}
 
 		if (!isTty) {
-			// we're using the GUI: Set up the Look&Feel to match the platform
-			System.setProperty(
-					"com.apple.mrj.application.apple.menu.about.name",
-					"Logisim-evolution");
-			System.setProperty(
-					"apple.awt.application.name",
-					"Logisim-evolution");
-			System.setProperty("apple.laf.useScreenMenuBar", "true");
-
 			LocaleManager.setReplaceAccents(false);
 
 			// Initialize graphics acceleration if appropriate

@@ -47,6 +47,15 @@ import com.cburch.logisim.prefs.AppPreferences;
 
 public class Main {
 	public static void main(String[] args) throws Exception {
+		// Set up the Look&Feel to match the platform
+		System.setProperty(
+				"com.apple.mrj.application.apple.menu.about.name",
+				"Logisim-evolution");
+		System.setProperty(
+				"apple.awt.application.name",
+				"Logisim-evolution");
+		System.setProperty("apple.laf.useScreenMenuBar", "true");
+
 		try {
 			if (!GraphicsEnvironment.isHeadless())  {
 				UIManager.setLookAndFeel(AppPreferences.LookAndFeel.get());
