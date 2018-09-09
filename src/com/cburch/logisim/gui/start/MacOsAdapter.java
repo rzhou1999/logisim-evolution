@@ -76,14 +76,19 @@ class MacOsAdapter {
 	}
 
 	static void addListeners(boolean added) {
-		MyListener myListener = new MyListener();
-		if (!added)
-			MRJAdapter.addOpenDocumentListener(myListener);
-		if (!added)
-			MRJAdapter.addPrintDocumentListener(myListener);
-		MRJAdapter.addPreferencesListener(myListener);
-		MRJAdapter.addQuitApplicationListener(myListener);
-		MRJAdapter.addAboutListener(myListener);
+		try {
+			MyListener myListener = new MyListener();
+			if (!added)
+				MRJAdapter.addOpenDocumentListener(myListener);
+			if (!added)
+				MRJAdapter.addPrintDocumentListener(myListener);
+			MRJAdapter.addPreferencesListener(myListener);
+			MRJAdapter.addQuitApplicationListener(myListener);
+			MRJAdapter.addAboutListener(myListener);
+		}
+		catch (NoClassDefFoundError e) {
+			e.printStackTrace();
+		}
 	}
 
 	private static void setDockIcon() {

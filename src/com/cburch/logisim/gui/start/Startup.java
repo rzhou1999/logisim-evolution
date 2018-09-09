@@ -423,25 +423,13 @@ public class Startup implements AWTEventListener {
 	}
 
 	private static void registerHandler() {
-		String prop = System.getProperty("os.name");
-		if (prop != null && prop.toLowerCase().contains("os x") && System.getProperty("mrj.version") == null) {
-			// MRJ is no longer present on OS X, but we want MRJAdapter to keep working for now.
-			System.setProperty("mrj.version", "99.0.0");
-		}
 		try {
-			Class<?> needed1 = Class.forName("com.apple.eawt.Application");
-			if (needed1 == null) {
-				return;
-			}
+			// attempt to look for OS X class
+			Class.forName("com.apple.eawt.Application");
 			MacOsAdapter.register();
 			MacOsAdapter.addListeners(false);
-		} catch (ClassNotFoundException | NoClassDefFoundError e) {
+		} catch (ClassNotFoundException e) {
 			return;
-		} catch (Exception t) {
-			try {
-				MacOsAdapter.addListeners(false);
-			} catch (Exception t2) {
-			}
 		}
 	}
 
