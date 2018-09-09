@@ -435,7 +435,7 @@ public class Startup implements AWTEventListener {
 			}
 			MacOsAdapter.register();
 			MacOsAdapter.addListeners(false);
-		} catch (ClassNotFoundException e) {
+		} catch (ClassNotFoundException | NoClassDefFoundError e) {
 			return;
 		} catch (Exception t) {
 			try {

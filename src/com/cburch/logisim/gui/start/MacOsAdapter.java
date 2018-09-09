@@ -39,11 +39,17 @@ import javax.swing.ImageIcon;
 //MAC import com.apple.eawt.Application;
 import com.cburch.logisim.gui.prefs.PreferencesFrame;
 import com.cburch.logisim.proj.ProjectActions;
+import com.cburch.logisim.util.Icons;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.roydesign.event.ApplicationEvent;
 import net.roydesign.mac.MRJAdapter;
 
 class MacOsAdapter {
+
+	final static Logger logger = LoggerFactory.getLogger(MacOsAdapter.class);
 
 	private static class MyListener implements ActionListener {
 		public void actionPerformed(ActionEvent event) {
@@ -83,22 +89,42 @@ class MacOsAdapter {
 	private static void setDockIcon() {
 		// Retrieve the Image object from the locally stored image file
 		// "frame" is the name of my JFrame variable, and "filename" is the name of the image file
-		java.net.URL imageURL = ClassLoader.getSystemResource("resources/logisim/img/logisim-icon-128.png");
+		java.net.URL imageURL = Icons.class.getClassLoader().getResource(
+				"resources/logisim/img/logisim-icon-128.png");
 		Image image = new ImageIcon(imageURL).getImage();
 
+		// Java <= 1.8 uses Application to set icon image
 		try {
-		    // Replace: import com.apple.eawt.Application
-		    String className = "com.apple.eawt.Application";
-		    Class<?> cls = Class.forName(className);
+			// Replace: import com.apple.eawt.Application
+			String className = "com.apple.eawt.Application";
+			Class<?> cls = Class.forName(className);
 
-		    // Replace: Application application = Application.getApplication();
-		    Object application = cls.getMethod("getApplication").invoke(null);
+			// Replace: Application application = Application.getApplication();
+			Object application = cls.getMethod("getApplication").invoke(null);
 
-		    // Replace: application.setDockIconImage(image);
-		    cls.getMethod("setDockIconImage", Image.class).invoke(application, image);
+			// Replace: application.setDockIconImage(image);
+			cls.getMethod("setDockIconImage", Image.class).invoke(application, image);
 		}
 		catch (Exception e) {
-		    e.printStackTrace();
+			e.printStackTrace();
+		}
+		// Java >= 9 uses Taskbar to set icon image
+		try {
+			// Replace: import java.awt.Taskbar
+			String className = "java.awt.Taskbar";
+			Class<?> cls = Class.forName(className);
+
+			// Replace: Taskbar taskbar = Taskbar.getTaskbar();
+			Object taskbar = cls.getMethod("getTaskbar").invoke(null);
+
+			// Replace: taskbar.setIconImage(image);
+			cls.getMethod("setIconImage", Image.class).invoke(taskbar, image);
+		}
+		catch (ClassNotFoundException e) {
+			logger.warn("java.awt.Taskbar not found for Java < 9");
+		}
+		catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 
