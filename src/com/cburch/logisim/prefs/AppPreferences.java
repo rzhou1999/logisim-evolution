@@ -511,7 +511,7 @@ public class AppPreferences {
 					Direction.WEST.toString(), TOOLBAR_DOWN_MIDDLE,
 					TOOLBAR_HIDDEN }, Direction.NORTH.toString()));
 	public static final PrefMonitor<String> LookAndFeel = create(new PrefMonitorString(
-			"LookAndFeel",UIManager.getCrossPlatformLookAndFeelClassName()));
+			"LookAndFeel",UIManager.getSystemLookAndFeelClassName()));
 	
 	// Layout preferences
 	public static final String ADD_AFTER_UNCHANGED = "unchanged";
