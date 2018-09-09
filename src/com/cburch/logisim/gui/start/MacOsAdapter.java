@@ -37,14 +37,13 @@ import java.awt.event.ActionListener;
 import javax.swing.ImageIcon;
 
 //MAC import com.apple.eawt.Application;
-//MAC import com.apple.eawt.ApplicationAdapter;
 import com.cburch.logisim.gui.prefs.PreferencesFrame;
 import com.cburch.logisim.proj.ProjectActions;
 
 import net.roydesign.event.ApplicationEvent;
 import net.roydesign.mac.MRJAdapter;
 
-class MacOsAdapter { // MAC extends ApplicationAdapter {
+class MacOsAdapter {
 
 	private static class MyListener implements ActionListener {
 		public void actionPerformed(ActionEvent event) {
@@ -103,19 +102,7 @@ class MacOsAdapter { // MAC extends ApplicationAdapter {
 		}
 	}
 
-	/*
-	 * MAC public void handleOpenFile(com.apple.eawt.ApplicationEvent event) {
-	 * Startup.doOpen(new File(event.getFilename())); }
-	 *
-	 * public void handlePrintFile(com.apple.eawt.ApplicationEvent event) {
-	 * Startup.doPrint(new File(event.getFilename())); }
-	 *
-	 * public void handlePreferences(com.apple.eawt.ApplicationEvent event) {
-	 * PreferencesFrame.showPreferences(); }
-	 */
-
 	public static void register() {
-		// MAC Application.getApplication().addApplicationListener(new MacOsAdapter());
 		setDockIcon();
 	}
 }

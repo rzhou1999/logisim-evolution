@@ -433,11 +433,6 @@ public class Startup implements AWTEventListener {
 			if (needed1 == null) {
 				return;
 			}
-			Class<?> needed2 = Class
-					.forName("com.apple.eawt.ApplicationAdapter");
-			if (needed2 == null) {
-				return;
-			}
 			MacOsAdapter.register();
 			MacOsAdapter.addListeners(false);
 		} catch (ClassNotFoundException e) {
