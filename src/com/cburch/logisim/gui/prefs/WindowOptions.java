@@ -117,7 +117,7 @@ class WindowOptions extends OptionsPanel {
 		JLabel important = new JLabel("Please restart logisim.");
 	    important.setFont(important.getFont().deriveFont(Font.ITALIC));
 	    panel.add(important);
-	    important = new JLabel("Important: changing the below values may have unpridictable results!");
+	    important = new JLabel("Important: changing the below values may have unpredictable results!");
 	    important.setFont(important.getFont().deriveFont(Font.ITALIC));
 	    panel.add(important);
 		panel.add(ZoomLabel);
