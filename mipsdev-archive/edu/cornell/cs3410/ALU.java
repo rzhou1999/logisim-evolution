@@ -16,7 +16,7 @@ import com.cburch.logisim.util.GraphicsUtil;
 
 public class ALU extends InstanceFactory {
     public ALU() {
-        super("RISC-V ALU");
+        super("Mips ALU");
         setOffsetBounds(Bounds.create(-30, -50, 60, 100));
         setPorts(new Port[] {
             new Port(-30, -30, Port.INPUT, 32),
@@ -26,8 +26,7 @@ public class ALU extends InstanceFactory {
             new Port(30, 0, Port.OUTPUT, 32),
         });
     }
-    
-    // Shifts A for risc-v not B
+
     @Override
     public void propagate(InstanceState state) {
         int A = state.getPortValue(0).toIntValue();
@@ -36,59 +35,59 @@ public class ALU extends InstanceFactory {
         int shift = state.getPortValue(3).toIntValue();
         int ans = 0;
         switch(op) {
-        case 0xa:
-        case 0xb:
-            ans = A << shift;
+        case 0x0:
+        case 0x1:
+            ans = B << shift;
             break;
 
-        case 0x8:
-        case 0x9:
+        case 0x2:
+        case 0x3:
             ans = A + B;
             break;
 
-        case 0xe:
-            ans = A >>> shift; // logical
-            break;
-
-        case 0xf:
-            ans = A >> shift; // arithmetic
-            break;
-
-        case 0xc:
-        case 0xd:
-            ans = A - B;
-            break;
-
-        case 0x3:
-            ans = A & B;
-            break;
-
-        case 0x1:
-            ans = A | B;
-            break;
-
-        case 0x7:
-            ans = A ^ B;
+        case 0x4:
+            ans = B >>> shift; // logical
             break;
 
         case 0x5:
-            ans = ~(A | B);
-            break;
-
-        case 0x0:
-        		ans = (A != B) ? 0x1 : 0x0;
-            break;
-     
-        case 0x2:
-    			ans = (A == B) ? 0x1 : 0x0;
-    			break;
-    			
-        case 0x4:
-        		ans = (A <= 0) ? 0x1 : 0x0; 
+            ans = B >> shift; // arithmetic
             break;
 
         case 0x6:
-			ans = (A > B) ? 0x1 : 0x0; 
+        case 0x7:
+            ans = A - B;
+            break;
+
+        case 0x8:
+            ans = A & B;
+            break;
+
+        case 0xA:
+            ans = A | B;
+            break;
+
+        case 0xC:
+            ans = A ^ B;
+            break;
+
+        case 0xE:
+            ans = ~(A | B);
+            break;
+
+        case 0x9:
+        		ans = (A != B) ? 0x1 : 0x0;
+            break;
+     
+        case 0xB:
+    			ans = (A == B) ? 0x1 : 0x0;
+    			break;
+    			
+        case 0xD:
+        		ans = (A <= 0) ? 0x1 : 0x0;
+            break;
+
+        case 0xF:
+			ans = (A > 0) ? 0x1 : 0x0;
             break;
         }
         Value out = Value.createKnown(BitWidth.create(32), ans);

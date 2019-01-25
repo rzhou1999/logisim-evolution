@@ -109,11 +109,11 @@ class RegisterFile32 extends InstanceFactory {
                 GraphicsUtil.H_RIGHT, GraphicsUtil.V_CENTER);
         GraphicsUtil.drawText(g, "WE", left+CHIP_WIDTH/2-40, bottom-1,
                 GraphicsUtil.H_CENTER, GraphicsUtil.V_BOTTOM);
-        GraphicsUtil.drawText(g, "xW", left+CHIP_WIDTH/2-10, bottom-1,
+        GraphicsUtil.drawText(g, "rW", left+CHIP_WIDTH/2-10, bottom-1,
                 GraphicsUtil.H_CENTER, GraphicsUtil.V_BOTTOM);
-        GraphicsUtil.drawText(g, "xA", left+CHIP_WIDTH/2+30, bottom-1,
+        GraphicsUtil.drawText(g, "rA", left+CHIP_WIDTH/2+30, bottom-1,
                 GraphicsUtil.H_CENTER, GraphicsUtil.V_BOTTOM);
-        GraphicsUtil.drawText(g, "xB", left+CHIP_WIDTH/2+50, bottom-1,
+        GraphicsUtil.drawText(g, "rB", left+CHIP_WIDTH/2+50, bottom-1,
                 GraphicsUtil.H_CENTER, GraphicsUtil.V_BOTTOM);
 
         // draw some rectangles
@@ -123,7 +123,7 @@ class RegisterFile32 extends InstanceFactory {
 
         // draw register labels
         for (int i = 0; i < NUM_REGISTERS; i++) {
-            GraphicsUtil.drawText(g, font, "x"+i,
+            GraphicsUtil.drawText(g, font, "$"+i,
                 bounds.getX() + boxX(i) - 1,
                 bounds.getY() + boxY(i) + (BOX_HEIGHT-1)/2,
                 GraphicsUtil.H_RIGHT, GraphicsUtil.V_CENTER);

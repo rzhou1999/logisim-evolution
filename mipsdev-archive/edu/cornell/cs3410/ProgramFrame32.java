@@ -41,7 +41,7 @@ public class ProgramFrame32 extends JFrame {
     private static final long serialVersionUID = 5437583663643692635L;
 
     private class WindowMenuManager extends WindowMenuItemManager {
-        WindowMenuManager() { super("RISC-V Program Listing", false); }
+        WindowMenuManager() { super("MIPS Program Listing", false); }
         public JFrame getJFrame(boolean create) { return ProgramFrame32.this; }
     }
 	
@@ -57,7 +57,7 @@ public class ProgramFrame32 extends JFrame {
         }
 
         @Override
-        public String getName() { return "Load RISC-V Program"; }
+        public String getName() { return "Load MIPS Program"; }
 
         @Override
         public void doIt(Project proj) {
@@ -93,7 +93,7 @@ public class ProgramFrame32 extends JFrame {
             if (src == load) {
                 JFileChooser chooser = new JFileChooser();
                 if (lastFile != null) chooser.setSelectedFile(lastFile);
-                chooser.setDialogTitle("Load RISC-V Program");
+                chooser.setDialogTitle("Load MIPS Program");
                 int choice = chooser.showOpenDialog(ProgramFrame32.this);
                 if (choice == JFileChooser.APPROVE_OPTION) {
                     File f = chooser.getSelectedFile();
@@ -114,7 +114,7 @@ public class ProgramFrame32 extends JFrame {
                     }
                     catch(IOException e) {
                         JOptionPane.showMessageDialog(ProgramFrame32.this, e.getMessage(),
-                                "Error loading RISC-V program" , JOptionPane.ERROR_MESSAGE);
+                                "Error loading MIPS program" , JOptionPane.ERROR_MESSAGE);
                     }
                 }
             }
@@ -181,7 +181,7 @@ public class ProgramFrame32 extends JFrame {
         load.addActionListener(myListener);
         close.addActionListener(myListener);
 
-		setTitle("RISC-V Program Listing");
+		setTitle("MIPS Program Listing");
 		load.setText("Load Program...");
 		close.setText("Close Window");
       

@@ -52,7 +52,7 @@ class Program32 extends InstanceFactory {
 	public static final Attribute<Listing> CONTENTS_ATTR = new ContentsAttribute();
     
     public Program32() {
-        super("RISC-VProgramROM", new SimpleStringGetter("RISC-V Program ROM"));
+        super("MIPSProgramROM", new SimpleStringGetter("MIPS Program ROM"));
         setAttributes(new Attribute[] { CONTENTS_ATTR }, new Object[] { new Listing() });
         setOffsetBounds(Bounds.create(-1*CHIP_WIDTH, -1*CHIP_DEPTH/2, CHIP_WIDTH, CHIP_DEPTH));
         setPorts(new Port[] {
@@ -181,7 +181,7 @@ class Program32 extends InstanceFactory {
 
     private static class ContentsAttribute extends Attribute<Listing> {
         public ContentsAttribute() {
-            super("contents", new SimpleStringGetter("RISC-V Program Listing"));
+            super("contents", new SimpleStringGetter("MIPS Program Listing"));
         }
         public java.awt.Component getCellEditor(Window source, Listing value) {
             if(source instanceof Frame) {
@@ -205,7 +205,7 @@ class Program32 extends InstanceFactory {
                 // too bad this will be in back of the splash
                 JOptionPane.showMessageDialog(null, "The contents of the Program chip could not be read: " +
                         e.getMessage(),
-                        "Error loading RISC-V program." ,
+                        "Error loading MIPS program." ,
                         JOptionPane.ERROR_MESSAGE);
                 return new Listing();
             }
