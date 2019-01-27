@@ -112,8 +112,11 @@ public class ALU2 extends InstanceFactory {
                     break;
                 }
                 state.setPort(4, out, 32);
-                out = Value.createKnown(BitWidth.create(32), useImmOut);
+
+                // out = Value.createKnown(BitWidth.create(32), useImmOut);
+                out = Value.createKnown(BitWidth.create(1), useImmOut);
                 state.setPort(5, out, 32);
+
                 out = Value.createKnown(BitWidth.create(4), ALUOp[i]);
                 state.setPort(6, out, 32);
             }

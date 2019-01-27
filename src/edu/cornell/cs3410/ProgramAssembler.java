@@ -383,6 +383,7 @@ public class ProgramAssembler {
                 }
                 return (int) (val & mask);
             } else if ((c == '-') || (c >= '0' && c <= '9')) {
+                // for integer immediates
                 val = Long.parseLong(imm);
             } else {
                 Integer a = sym.get(imm);
@@ -392,10 +393,11 @@ public class ProgramAssembler {
                 val = ((long) a.intValue() & 0xffffffffL) - offset;
                 imm = imm + " (" + val + ")";
             }
+
             if (type == Type.ANY_ABSOLUTE) {
                 // nb: this check is different,
-                // to allow 0xffff to mean "-1" for signed abs/relative,
-                // but 65535 for unsigned absolute
+                // to allow 0xfff to mean "-1" for signed abs/relative,
+                // but 4096 for unsigned absolute
                 if ((val & mask) != val) {
                     throw new ParseException("Line " + (lineno + 1) + ": overflow in " + type + " '" + imm + "' ("
                             + nbits + " bits maximum)");
@@ -501,11 +503,11 @@ public class ProgramAssembler {
     private static int reg(String r) throws NumberFormatException {
         /*
          * Register ABI Name Description Saver x0 zero Hard-wired zero — x1 ra Return
-         * address Caller x2 sp Stack pointer Callee x3 gp Global pointer — x4 tp T
-         * read pointer — x5–7 t0–2 Temporaries Caller x8 s0/fp Saved regis
-         * er/frame pointer Callee x9 s1 Saved register Callee x10–11 a0–1 Fun tion
-         * arguments/return val Caller x12–17 a2–7 Function arguments Cal er
-         * x18–27 s2–11 Saved registers Callee x28–31 t3–6 Temporaries Cal er
+         * address Caller x2 sp Stack pointer Callee x3 gp Global pointer — x4 tp T r
+         * ad pointer — x5–7 t0–2 Temporaries Caller x8 s0/fp Saved regis er/fr me
+         * pointer Callee x9 s1 Saved register Callee x10–11 a0–1 Fun tion arg
+         * ments/return val Caller x12–17 a2–7 Function arguments Cal er x18 27
+         * s2–11 Saved registers Callee x28–31 t3–6 Temporaries Cal er
          */
         int i = 0;
         switch (r.charAt(0)) {
@@ -758,10 +760,6 @@ public class ProgramAssembler {
         String rs2(int instr) {
             return "x" + ((instr >> 20) & 0x1f);
         }
-
-        String sImm(int instr) {
-            return "" + toHex(((instr >> 18) & 0xfe0) | ((instr >> 7) & 0x1f), 3);
-        }
     }
 
     static Pattern pat_Store = Pattern.compile(_reg + "," + _imm + "\\(" + _reg + "\\)");
@@ -774,6 +772,13 @@ public class ProgramAssembler {
             this.debug = debug;
         }
 
+        // sImm for Store instructions.
+        String sImm(int instr) {
+            int i11_5 = (instr >>> 25) & 0x7f;
+            int i4_0 = (instr >>> 7) & 0x1f;
+            return "" + toHex(((i11_5 << 5) | i4_0) & 0xfff, 3);
+        }
+
         String decode(int addr, int instr) {
             return name + " " + rs2(instr) + ", " + sImm(instr) + "(" + rs1(instr) + ")";
         }
@@ -784,7 +789,7 @@ public class ProgramAssembler {
                 throw new ParseException(
                         "Line " + (lineno + 1) + ": '" + name + "' expects xT, Imm(xS) with args: " + args);
             }
-            int imm = resolve(lineno, m.group(2), addr, sym, Type.ANY_ABSOLUTE, 12);
+            int imm = resolve(lineno, m.group(2), addr, sym, Type.SIGNED_ABSOLUTE, 12);
             int imm7 = (imm >> 5) & 0x7f;
             int imm5 = imm & 0x1f;
             // if (debug) {throw new ParseException(""+toHex(encode(m.group(3), m.group(1),
@@ -806,6 +811,16 @@ public class ProgramAssembler {
             this.debug = debug;
         }
 
+        // sImm function of command object
+        String sImm(int instr) {
+            int i12 = (instr >>> 31) & 1;
+            int i10_5 = (instr >>> 25) & 0x3f;
+            int i4_1 = (instr >>> 8) & 0xf;
+            int i11 = (instr >>> 7) & 1;
+            int imm = (i12 << 11) | (i11 << 10) | (i10_5 << 4) | i4_1;
+            return "" + toHex(imm & 0xfff, 3);
+        }
+
         String decode(int addr, int instr) {
             return name + " " + rs1(instr) + ", " + rs2(instr) + ", " + sImm(instr);
         }
@@ -817,7 +832,7 @@ public class ProgramAssembler {
                         "Line " + (lineno + 1) + ": '" + name + "' expects xS, xT, Imm ;with args: " + args);
             }
 
-            int imm = resolve(lineno, m.group(3), addr, sym, Type.ANY_ABSOLUTE, 12);
+            int imm = resolve(lineno, m.group(3), addr, sym, Type.SIGNED_ABSOLUTE, 12);
             Matcher n = pat_LabBr.matcher(args);
             if (n.matches())
                 imm = (imm - addr) & 0xfff;
@@ -856,7 +871,7 @@ public class ProgramAssembler {
                             "Line " + (lineno + 1) + ": '" + name + "' expects xD, Imm with args: " + args);
                 }
 
-                int imm = resolve(lineno, m.group(2), addr, sym, Type.ANY_ABSOLUTE, 20);
+                int imm = resolve(lineno, m.group(2), addr, sym, Type.SIGNED_ABSOLUTE, 20);
                 int dest = reg(m.group(1));
                 if ((dest & 0x1f) != dest) {
                     throw new ParseException("Line " + (lineno + 1) + ": invalid destination register: x" + dest);
@@ -908,7 +923,7 @@ public class ProgramAssembler {
                 }
 
                 // resolve the matched immediate to a 20 bit immediate
-                int imm = resolve(lineno, m.group(2), addr, sym, Type.ANY_ABSOLUTE, 20);
+                int imm = resolve(lineno, m.group(2), addr, sym, Type.SIGNED_ABSOLUTE, 20);
 
                 // get the destination register and check for validity
                 int dest = reg(m.group(1));
