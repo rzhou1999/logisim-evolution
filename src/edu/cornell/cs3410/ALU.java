@@ -16,17 +16,12 @@ import com.cburch.logisim.util.GraphicsUtil;
 
 public class ALU extends InstanceFactory {
     public ALU() {
-        super("RISC-V ALU");
+        super("ALU");
         setOffsetBounds(Bounds.create(-30, -50, 60, 100));
-        setPorts(new Port[] {
-            new Port(-30, -30, Port.INPUT, 32),
-            new Port(-30, 30, Port.INPUT, 32),
-            new Port(-10, 40, Port.INPUT, 4),
-            new Port(10, 30, Port.INPUT, 5),
-            new Port(30, 0, Port.OUTPUT, 32),
-        });
+        setPorts(new Port[] { new Port(-30, -30, Port.INPUT, 32), new Port(-30, 30, Port.INPUT, 32),
+                new Port(-10, 40, Port.INPUT, 4), new Port(10, 30, Port.INPUT, 5), new Port(30, 0, Port.OUTPUT, 32), });
     }
-    
+
     // Shifts A for risc-v not B
     @Override
     public void propagate(InstanceState state) {
@@ -35,7 +30,7 @@ public class ALU extends InstanceFactory {
         int op = state.getPortValue(2).toIntValue();
         int shift = state.getPortValue(3).toIntValue();
         int ans = 0;
-        switch(op) {
+        switch (op) {
         case 0xa:
         case 0xb:
             ans = A << shift;
@@ -76,19 +71,19 @@ public class ALU extends InstanceFactory {
             break;
 
         case 0x0:
-        		ans = (A != B) ? 0x1 : 0x0;
+            ans = (A != B) ? 0x1 : 0x0;
             break;
-     
+
         case 0x2:
-    			ans = (A == B) ? 0x1 : 0x0;
-    			break;
-    			
+            ans = (A == B) ? 0x1 : 0x0;
+            break;
+
         case 0x4:
-        		ans = (A <= 0) ? 0x1 : 0x0; 
+            ans = (A <= 0) ? 0x1 : 0x0;
             break;
 
         case 0x6:
-			ans = (A > B) ? 0x1 : 0x0; 
+            ans = (A > B) ? 0x1 : 0x0;
             break;
         }
         Value out = Value.createKnown(BitWidth.create(32), ans);
@@ -103,12 +98,8 @@ public class ALU extends InstanceFactory {
         int x1 = x0 + bounds.getWidth();
         int y0 = bounds.getY();
         int y1 = y0 + bounds.getHeight();
-        int xp[] = {
-            x0, x1, x1, x0, x0, x0 + 20, x0
-        };
-        int yp[] = {
-            y0, y0 + 30, y1 - 30, y1, y1 - 40, y1 - 50, y1 - 60
-        };
+        int xp[] = { x0, x1, x1, x0, x0, x0 + 20, x0 };
+        int yp[] = { y0, y0 + 30, y1 - 30, y1, y1 - 40, y1 - 50, y1 - 60 };
         GraphicsUtil.switchToWidth(painter.getGraphics(), 2);
         painter.getGraphics().drawPolygon(xp, yp, 7);
         painter.drawPort(0, "A", Direction.EAST);
@@ -117,13 +108,13 @@ public class ALU extends InstanceFactory {
         painter.drawPort(3, "SA", Direction.SOUTH);
         painter.drawPort(4, "C", Direction.WEST);
     }
-    
+
     @Override
     public void paintIcon(InstancePainter painter) {
         Graphics g = painter.getGraphics();
         g.setColor(Color.BLACK);
-        int xp[] = {0, 15, 15, 0, 0, 3, 0};
-        int yp[] = {0, 5, 10, 15, 10, 8, 6};
+        int xp[] = { 0, 15, 15, 0, 0, 3, 0 };
+        int yp[] = { 0, 5, 10, 15, 10, 8, 6 };
         g.drawPolygon(xp, yp, 7);
     }
 }

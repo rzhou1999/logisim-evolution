@@ -1,7 +1,7 @@
 /* Adapted by kwalsh from Logisim's standard RAM, which is... */
 /* Copyright (c) 2006, 2009, Carl Burch. License information is located in the
  * com.cburch.logisim.Main source code and at www.cburch.com/logisim/. */
- 
+
 package edu.cornell.cs3410;
 
 import java.awt.Color;
@@ -38,23 +38,19 @@ public class Ram extends Mem {
     private static final int DATA_ATTR = 32;
     private static final BitWidth dataBits = BitWidth.create(32);
 
-    private static Attribute<?>[] ATTRIBUTES = {
-        Mem.ADDR_ATTR
-    };
-    private static Object[] DEFAULTS = {
-        BitWidth.create(20)
-    };
-    
-    private static final int OE  = MEM_INPUTS + 0;
+    private static Attribute<?>[] ATTRIBUTES = { Mem.ADDR_ATTR };
+    private static Object[] DEFAULTS = { BitWidth.create(20) };
+
+    private static final int OE = MEM_INPUTS + 0;
     private static final int CLR = MEM_INPUTS + 1;
     private static final int CLK = MEM_INPUTS + 2;
-    private static final int WE  = MEM_INPUTS + 3;
+    private static final int WE = MEM_INPUTS + 3;
     private static final int DIN = MEM_INPUTS + 4;
 
     private static Object[][] logOptions = new Object[9][];
 
     public Ram() {
-        super("MIPS RAM", new SimpleStringGetter("MIPS RAM"), 3);
+        super("RAM", new SimpleStringGetter("RAM"), 3);
         setInstanceLogger(Logger.class);
     }
 
@@ -76,21 +72,24 @@ public class Ram extends Mem {
         boolean separate = true;
 
         int portCount = MEM_INPUTS;
-        if(asynch) portCount += 2;
-        else if(separate) portCount += 5;
-        else portCount += 3;
+        if (asynch)
+            portCount += 2;
+        else if (separate)
+            portCount += 5;
+        else
+            portCount += 3;
         Port[] ps = new Port[portCount];
 
         configureStandardPorts(instance, ps);
-        ps[OE]  = new Port(-50, 40, Port.INPUT, 1);
+        ps[OE] = new Port(-50, 40, Port.INPUT, 1);
         ps[OE].setToolTip(Strings.getter("ramOETip"));
         ps[CLR] = new Port(-30, 40, Port.INPUT, 1);
         ps[CLR].setToolTip(Strings.getter("ramClrTip"));
-        if(!asynch) {
+        if (!asynch) {
             ps[CLK] = new Port(-70, 40, Port.INPUT, 1);
             ps[CLK].setToolTip(Strings.getter("ramClkTip"));
         }
-        if(separate) {
+        if (separate) {
             ps[WE] = new Port(-110, 40, Port.INPUT, 1);
             ps[WE].setToolTip(Strings.getter("ramWETip"));
             ps[DIN] = new Port(-140, 20, Port.INPUT, DATA_ATTR);
@@ -111,7 +110,7 @@ public class Ram extends Mem {
         BitWidth addrBits = state.getAttributeValue(ADDR_ATTR);
 
         RamState myState = (RamState) state.getData();
-        if(myState == null) {
+        if (myState == null) {
             MemContents contents = MemContents.create(addrBits.getWidth(), dataBits.getWidth());
             Instance instance = state.getInstance();
             myState = new RamState(instance, contents, new MemListener(instance));
@@ -127,7 +126,7 @@ public class Ram extends Mem {
         BitWidth addrBits = instance.getAttributeValue(ADDR_ATTR);
 
         RamState myState = (RamState) instance.getData(state);
-        if(myState == null) {
+        if (myState == null) {
             MemContents contents = MemContents.create(addrBits.getWidth(), dataBits.getWidth());
             myState = new RamState(instance, contents, new MemListener(instance));
             instance.setData(state, myState);
@@ -143,24 +142,30 @@ public class Ram extends Mem {
         return state.getHexFrame(proj);
     }
 
-    static final Value[] vmask = new Value[] {
-	/*0:xxxxxxxx*/ Value.createUnknown(BitWidth.create(32)),
-	/*1:xxxxxx00*/ Value.createKnown(BitWidth.create(8), 0).extendWidth(32, Value.UNKNOWN),
-	/*2:xxxx00xx*/ Value.createUnknown(BitWidth.create(8)).extendWidth(16, Value.FALSE).extendWidth(32, Value.UNKNOWN),
-	/*3:xxxx0000*/ Value.createKnown(BitWidth.create(16), 0).extendWidth(32, Value.UNKNOWN),
-	/*4:xx00xxxx*/ Value.createUnknown(BitWidth.create(16)).extendWidth(24, Value.FALSE).extendWidth(32, Value.UNKNOWN),
-	/*5:xx00xx00*/ Value.createKnown(BitWidth.create(8), 0).extendWidth(16, Value.UNKNOWN).extendWidth(24, Value.FALSE).extendWidth(32, Value.UNKNOWN),
-	/*6:xx0000xx*/ Value.createUnknown(BitWidth.create(8)).extendWidth(24, Value.FALSE).extendWidth(32, Value.UNKNOWN),
-	/*7:xx000000*/ Value.createKnown(BitWidth.create(24), 0).extendWidth(32, Value.UNKNOWN),
-	/*8:00xxxxxx*/ Value.createUnknown(BitWidth.create(24)).extendWidth(32, Value.FALSE),
-	/*9:00xxxx00*/ Value.createKnown(BitWidth.create(8), 0).extendWidth(24, Value.UNKNOWN).extendWidth(32, Value.FALSE),
-	/*a:00xx00xx*/ Value.createUnknown(BitWidth.create(8)).extendWidth(16, Value.FALSE).extendWidth(24, Value.UNKNOWN).extendWidth(32, Value.FALSE),
-	/*b:00xx0000*/ Value.createKnown(BitWidth.create(16), 0).extendWidth(24, Value.UNKNOWN).extendWidth(32, Value.FALSE),
-	/*c:0000xxxx*/ Value.createUnknown(BitWidth.create(16)).extendWidth(32, Value.FALSE),
-	/*d:0000xx00*/ Value.createKnown(BitWidth.create(8), 0).extendWidth(16, Value.UNKNOWN).extendWidth(32, Value.FALSE),
-	/*e:000000xx*/ Value.createUnknown(BitWidth.create(8)).extendWidth(32, Value.FALSE),
-	/*f:00000000*/ Value.createKnown(BitWidth.create(32), 0)
-    };
+    static final Value[] vmask = new Value[] { /* 0:xxxxxxxx */ Value.createUnknown(BitWidth.create(32)),
+            /* 1:xxxxxx00 */ Value.createKnown(BitWidth.create(8), 0).extendWidth(32, Value.UNKNOWN),
+            /* 2:xxxx00xx */ Value.createUnknown(BitWidth.create(8)).extendWidth(16, Value.FALSE).extendWidth(32,
+                    Value.UNKNOWN),
+            /* 3:xxxx0000 */ Value.createKnown(BitWidth.create(16), 0).extendWidth(32, Value.UNKNOWN),
+            /* 4:xx00xxxx */ Value.createUnknown(BitWidth.create(16)).extendWidth(24, Value.FALSE).extendWidth(32,
+                    Value.UNKNOWN),
+            /* 5:xx00xx00 */ Value.createKnown(BitWidth.create(8), 0).extendWidth(16, Value.UNKNOWN)
+                    .extendWidth(24, Value.FALSE).extendWidth(32, Value.UNKNOWN),
+            /* 6:xx0000xx */ Value.createUnknown(BitWidth.create(8)).extendWidth(24, Value.FALSE).extendWidth(32,
+                    Value.UNKNOWN),
+            /* 7:xx000000 */ Value.createKnown(BitWidth.create(24), 0).extendWidth(32, Value.UNKNOWN),
+            /* 8:00xxxxxx */ Value.createUnknown(BitWidth.create(24)).extendWidth(32, Value.FALSE),
+            /* 9:00xxxx00 */ Value.createKnown(BitWidth.create(8), 0).extendWidth(24, Value.UNKNOWN).extendWidth(32,
+                    Value.FALSE),
+            /* a:00xx00xx */ Value.createUnknown(BitWidth.create(8)).extendWidth(16, Value.FALSE)
+                    .extendWidth(24, Value.UNKNOWN).extendWidth(32, Value.FALSE),
+            /* b:00xx0000 */ Value.createKnown(BitWidth.create(16), 0).extendWidth(24, Value.UNKNOWN).extendWidth(32,
+                    Value.FALSE),
+            /* c:0000xxxx */ Value.createUnknown(BitWidth.create(16)).extendWidth(32, Value.FALSE),
+            /* d:0000xx00 */ Value.createKnown(BitWidth.create(8), 0).extendWidth(16, Value.UNKNOWN).extendWidth(32,
+                    Value.FALSE),
+            /* e:000000xx */ Value.createUnknown(BitWidth.create(8)).extendWidth(32, Value.FALSE),
+            /* f:00000000 */ Value.createKnown(BitWidth.create(32), 0) };
 
     @Override
     public void propagate(InstanceState state) {
@@ -174,15 +179,27 @@ public class Ram extends Mem {
         boolean outputEnabled = state.getPortValue(OE) != Value.FALSE;
         boolean shouldClear = state.getPortValue(CLR) == Value.TRUE;
 
-        if(shouldClear) {
+        if (shouldClear) {
             myState.getContents().clear();
         }
 
-	int mask = 0, bmask = 0;
-	if (maskValue.get(0) != Value.FALSE) { mask |= 0x1<<0; bmask |= 0xff<<0; }
-	if (maskValue.get(1) != Value.FALSE) { mask |= 0x1<<1; bmask |= 0xff<<8; }
-	if (maskValue.get(2) != Value.FALSE) { mask |= 0x1<<2; bmask |= 0xff<<16; }
-	if (maskValue.get(3) != Value.FALSE) { mask |= 0x1<<3; bmask |= 0xff<<24; }
+        int mask = 0, bmask = 0;
+        if (maskValue.get(0) != Value.FALSE) {
+            mask |= 0x1 << 0;
+            bmask |= 0xff << 0;
+        }
+        if (maskValue.get(1) != Value.FALSE) {
+            mask |= 0x1 << 1;
+            bmask |= 0xff << 8;
+        }
+        if (maskValue.get(2) != Value.FALSE) {
+            mask |= 0x1 << 2;
+            bmask |= 0xff << 16;
+        }
+        if (maskValue.get(3) != Value.FALSE) {
+            mask |= 0x1 << 3;
+            bmask |= 0xff << 24;
+        }
 
         if (mask == 0) {
             myState.setCurrent(-1, 0);
@@ -191,32 +208,32 @@ public class Ram extends Mem {
         }
 
         int addr = addrValue.toIntValue();
-        if(!addrValue.isFullyDefined() || addr < 0)
+        if (!addrValue.isFullyDefined() || addr < 0)
             return;
-        if(addr != myState.getCurrent()) {
+        if (addr != myState.getCurrent()) {
             myState.setCurrent(addr, mask);
             myState.scrollToShow(addr);
         } else if (mask != myState.getCurrentMask()) {
             myState.setCurrent(addr, mask);
-	}
+        }
 
-        if(!shouldClear && triggered) {
+        if (!shouldClear && triggered) {
             boolean shouldStore;
-            if(separate) {
+            if (separate) {
                 shouldStore = state.getPortValue(WE) != Value.FALSE;
             } else {
                 shouldStore = !outputEnabled;
             }
-            if(shouldStore) {
+            if (shouldStore) {
                 Value dataValue = state.getPortValue(separate ? DIN : DATA);
-		int newVal = dataValue.toIntValue();
-		int oldVal = myState.getContents().get(addr);
-		newVal = (newVal & bmask) | (oldVal & ~bmask);
+                int newVal = dataValue.toIntValue();
+                int oldVal = myState.getContents().get(addr);
+                newVal = (newVal & bmask) | (oldVal & ~bmask);
                 myState.getContents().set(addr, newVal);
             }
         }
 
-        if(outputEnabled) {
+        if (outputEnabled) {
             int val = myState.getContents().get(addr);
             Value[] vals = vmask[mask].getAll();
             // vmask[mask] is x's and zeroes right now.
@@ -247,11 +264,12 @@ public class Ram extends Mem {
         boolean asynch = false;
         boolean separate = true;
 
-        if(!asynch) painter.drawClock(CLK, Direction.NORTH);
+        if (!asynch)
+            painter.drawClock(CLK, Direction.NORTH);
         painter.drawPort(OE, Strings.get("ramOELabel"), Direction.SOUTH);
         painter.drawPort(CLR, Strings.get("ramClrLabel"), Direction.SOUTH);
 
-        if(separate) {
+        if (separate) {
             painter.drawPort(WE, Strings.get("ramWELabel"), Direction.SOUTH);
             painter.getGraphics().setColor(Color.BLACK);
             painter.drawPort(DIN, Strings.get("ramDataLabel"), Direction.EAST);
@@ -266,14 +284,13 @@ public class Ram extends Mem {
         GraphicsUtil.drawCenteredText(g, "RAM", 10, 9);
         g.setFont(old);
         g.drawRect(0, 4, 19, 12);
-        for(int dx = 2; dx < 20; dx += 5) {
-            g.drawLine(dx,  2, dx,  4);
+        for (int dx = 2; dx < 20; dx += 5) {
+            g.drawLine(dx, 2, dx, 4);
             g.drawLine(dx, 16, dx, 18);
         }
     }
 
-    private static class RamState extends MemState
-            implements InstanceData, AttributeListener {
+    private static class RamState extends MemState implements InstanceData, AttributeListener {
         private Instance parent;
         private MemListener listener;
         private HexFrame hexFrame = null;
@@ -284,15 +301,19 @@ public class Ram extends Mem {
             this.parent = parent;
             this.listener = listener;
             this.clockState = new ClockState();
-            if(parent != null) parent.getAttributeSet().addAttributeListener(this);
+            if (parent != null)
+                parent.getAttributeSet().addAttributeListener(this);
             contents.addHexModelListener(listener);
         }
-        
+
         void setRam(Instance value) {
-            if(parent == value) return;
-            if(parent != null) parent.getAttributeSet().removeAttributeListener(this);
+            if (parent == value)
+                return;
+            if (parent != null)
+                parent.getAttributeSet().removeAttributeListener(this);
             parent = value;
-            if(value != null) value.getAttributeSet().addAttributeListener(this);
+            if (value != null)
+                value.getAttributeSet().addAttributeListener(this);
         }
 
         @Override
@@ -303,10 +324,10 @@ public class Ram extends Mem {
             ret.getContents().addHexModelListener(listener);
             return ret;
         }
-        
+
         // Retrieves a HexFrame for editing within a separate window
         public HexFrame getHexFrame(Project proj) {
-            if(hexFrame == null) {
+            if (hexFrame == null) {
                 hexFrame = new HexFrame(proj, getContents());
                 hexFrame.addWindowListener(new WindowAdapter() {
                     @Override
@@ -317,7 +338,7 @@ public class Ram extends Mem {
             }
             return hexFrame;
         }
-        
+
         //
         // methods for accessing the write-enable data
         //
@@ -325,7 +346,8 @@ public class Ram extends Mem {
             return clockState.updateClock(newClock, trigger);
         }
 
-        public void attributeListChanged(AttributeEvent e) { }
+        public void attributeListChanged(AttributeEvent e) {
+        }
 
         public void attributeValueChanged(AttributeEvent e) {
             AttributeSet attrs = e.getSource();
@@ -333,18 +355,19 @@ public class Ram extends Mem {
             getContents().setDimensions(addrBits.getWidth(), dataBits.getWidth());
         }
     }
-    
+
     public static class Logger extends InstanceLogger {
         @Override
         public Object[] getLogOptions(InstanceState state) {
             int addrBits = state.getAttributeValue(ADDR_ATTR).getWidth();
-            if(addrBits >= logOptions.length) addrBits = logOptions.length - 1;
-            synchronized(logOptions) {
+            if (addrBits >= logOptions.length)
+                addrBits = logOptions.length - 1;
+            synchronized (logOptions) {
                 Object[] ret = logOptions[addrBits];
-                if(ret == null) {
+                if (ret == null) {
                     ret = new Object[1 << addrBits];
                     logOptions[addrBits] = ret;
-                    for(int i = 0; i < ret.length; i++) {
+                    for (int i = 0; i < ret.length; i++) {
                         ret[i] = Integer.valueOf(i);
                     }
                 }
@@ -354,7 +377,7 @@ public class Ram extends Mem {
 
         @Override
         public String getLogName(InstanceState state, Object option) {
-            if(option instanceof Integer) {
+            if (option instanceof Integer) {
                 String disp = "MIPSRAM";
                 Location loc = state.getInstance().getLocation();
                 return disp + loc + "[" + option + "]";
@@ -365,11 +388,10 @@ public class Ram extends Mem {
 
         @Override
         public Value getLogValue(InstanceState state, Object option) {
-            if(option instanceof Integer) {
+            if (option instanceof Integer) {
                 MemState s = (MemState) state.getData();
                 int addr = ((Integer) option).intValue();
-                return Value.createKnown(BitWidth.create(s.getDataBits()),
-                        s.getContents().get(addr));
+                return Value.createKnown(BitWidth.create(s.getDataBits()), s.getContents().get(addr));
             } else {
                 return Value.NIL;
             }

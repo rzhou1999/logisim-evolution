@@ -198,6 +198,11 @@ public class ProgramAssembler {
     static String __hex = "0x[a-fA-F0-9]+";
     static String __decimal = "-?\\d+";
     static String __label = "[a-zA-Z]\\w*";
+
+    // immediate regex for other immediate instructions
+    static String _immNoLabel = "(" + __hex + "|" + __decimal + ")";
+
+    // immediate regex that can be used for jumping
     static String _imm = "(" + __hex + "|" + __decimal + "|" + __label + ")";
 
     private static int parseSegmentAddress(int lineno, String addr) throws IOException {
@@ -496,11 +501,11 @@ public class ProgramAssembler {
     private static int reg(String r) throws NumberFormatException {
         /*
          * Register ABI Name Description Saver x0 zero Hard-wired zero — x1 ra Return
-         * address Caller x2 sp Stack pointer Callee x3 gp Global pointer — x4 tp Thread
-         * pointer — x5–7 t0–2 Temporaries Caller x8 s0/fp Saved register/frame pointer
-         * Callee x9 s1 Saved register Callee x10–11 a0–1 Function arguments/return val
-         * Caller x12–17 a2–7 Function arguments Caller x18–27 s2–11 Saved registers
-         * Callee x28–31 t3–6 Temporaries Caller
+         * address Caller x2 sp Stack pointer Callee x3 gp Global pointer — x4 tp T
+         * read pointer — x5–7 t0–2 Temporaries Caller x8 s0/fp Saved regis
+         * er/frame pointer Callee x9 s1 Saved register Callee x10–11 a0–1 Fun tion
+         * arguments/return val Caller x12–17 a2–7 Function arguments Cal er
+         * x18–27 s2–11 Saved registers Callee x28–31 t3–6 Temporaries Cal er
          */
         int i = 0;
         switch (r.charAt(0)) {
@@ -602,10 +607,7 @@ public class ProgramAssembler {
             }
 
             int imm = resolve(lineno, m.group(3), addr, sym, itype, 12);
-            // if (debug) {throw new ParseException("" + m.matches() + "
-            // "+toHex(encode(m.group(1), m.group(2), imm, lineno),8));}
-            // if (debug) {throw new ParseException("Args: " + args + ", register values: "
-            // + "x" + reg(m.group(1)) + ", x" + reg(m.group(2)));}
+
             return encode(m.group(1), m.group(2), imm, lineno);
         }
 
@@ -826,10 +828,7 @@ public class ProgramAssembler {
 
             int imm7 = (imm12 << 6) | imm10_5;
             int imm5 = (imm4_1 << 1) | imm11;
-            // if (debug) {throw new ParseException(""+toHex(encode(m.group(1), m.group(2),
-            // imm7, imm5, lineno),8));}
-            // if (debug) {throw new ParseException("Args: " + args + ", register values: "
-            // + "x" + reg(m.group(1)) + ", x" + reg(m.group(2)));}
+
             return encode(m.group(1), m.group(2), imm7, imm5, lineno);
         }
     }
@@ -880,123 +879,80 @@ public class ProgramAssembler {
         }
     }
 
-    private static abstract class JInst extends Command {
-        int format;
+    /*
+     * This class represents an instance of the Jump and Link instruction A
+     * well-formed JAL instruction is JAL rd, imm : where an imm can take the form
+     * of a hex or decimal number or a label. This immediate is 20 bits long.
+     */
+    static Pattern pat_jal = Pattern.compile(_reg + "," + _imm);
 
-        JInst(String name, int op, int form) {
+    private static class JumpInstance extends Command {
+        JumpInstance(String name, int op) {
             super(name, op);
-            this.format = form;
-            opcodes.put(op, this);
+            opcodes.put(new Integer(op), this);
         }
 
-        int encode(String rD, String rs1, int imm, int lineno) throws IOException {
+        String decode(int addr, int instr) {
+            // return the decoding/i.e. the instruction itself
+            return name + " " + rD(instr) + ", " + sImm(instr);
+        }
+
+        int encode(int lineno, int addr, String args, HashMap<String, Integer> sym) throws IOException {
             try {
-                int dest = reg(rD);
-                int src = 0;
-                if (format == 1)
-                    src = reg(rs1);
+                // If the argument matches this jal pattern then continue else throw an
+                // exception
+                Matcher m = pat_jal.matcher(args);
+                if (!m.matches()) {
+                    throw new ParseException(
+                            "Line " + (lineno + 1) + ": '" + name + "' expects xD, Imm with args: " + args);
+                }
+
+                // resolve the matched immediate to a 20 bit immediate
+                int imm = resolve(lineno, m.group(2), addr, sym, Type.ANY_ABSOLUTE, 20);
+
+                // get the destination register and check for validity
+                int dest = reg(m.group(1));
+
                 if ((dest & 0x1f) != dest) {
                     throw new ParseException("Line " + (lineno + 1) + ": invalid destination register: x" + dest);
                 }
-                if ((src & 0x1f) != src) {
-                    throw new ParseException("Line " + (lineno + 1) + ": invalid source register: x" + src);
-                }
-                if (format == 0) {
-                    return (imm << 12) | (dest << 7) | opcode;
-                }
-                return (imm << 20) | (src << 15) | (0 << 12) | (dest << 7) | opcode;
+
+                // Adjust immediates to be in correct bit positions for RISC-V
+                // well formed encoding: i[19] | i[9:0] | i[10] | i[18:11] | rd | opcode
+                int i19 = ((imm >>> 19) & 1) << 31;
+                int i9_0 = (imm & 0x1ff) << 21;
+                int i10 = ((imm >>> 9) & 1) << 20;
+                int i18_11 = ((imm >>> 10) & 0xff) << 12;
+
+                // return well formed encoding
+                return i19 | i9_0 | i10 | i18_11 | (dest << 7) | opcode;
             } catch (NumberFormatException e) {
+                // If exception is caught then throw a logisim error message
+                Matcher m = pat_jal.matcher(args);
                 throw new ParseException(
-                        "Line " + (lineno + 1) + ": invalid arguments to '" + name + "': " + e.getMessage());
+                        "Line " + (lineno + 1) + ": invalid arguments to '" + name + "': " + e.getMessage()
+                                + " registers: (" + m.group(2) + ") = (" + Integer.toString(reg(m.group(2))) + ")");
             }
         }
 
         String rD(int instr) {
-            return "x" + ((instr >> 7) & 0x1f);
-        }
-
-        String rs1(int instr) {
-            return "x" + ((instr >> 15) & 0x1f);
+            // return destination register as string
+            return "x" + ((instr >>> 7) & 0x1f);
         }
 
         String sImm(int instr) {
-            if (format == 0) {
-                return "" + toHex((instr >> 12) & 0xfffff, 5);
-            } else {
-                return "" + toHex((instr >> 20) & 0xfff, 3);
-            }
-        }
-    }
-    /*
-    static Pattern pat_JumpLink = Pattern.compile(_reg + "," + _imm);
-    static Pattern pat_LabJL = Pattern.compile(_reg + "," + __label);
+            // determine immediate
+            int i18_11 = (instr >>> 12) & 0xff;
+            int i10 = (instr >>> 20) & 1;
+            int i9_0 = (instr >>> 21) & 0x1ff;
+            int i19 = (instr >>> 31) & 1;
+            int imm = (i19 << 18) | (i18_11 << 10) | (i10 << 9) | i9_0;
 
-    private static class Jal extends JInst {
-        boolean debug;
-
-        Jal(String name, int op, int format, boolean debug) {
-            super(name, op, format);
-            this.debug = debug;
-        }
-
-        int encode(int lineno, int addr, String args, HashMap<String, Integer> sym) throws IOException {
-            Matcher m = pat_JumpLink.matcher(args);
-            Matcher n = pat_LabJL.matcher(args);
-            if (!m.matches() && !n.matches()) {
-                throw new ParseException(
-                        "Line " + (lineno + 1) + ": '" + name + "' expects xD, Imm with args: " + args);
-            }
-            int imm = resolve(lineno, m.group(2), addr, sym, Type.SIGNED_RELATIVE, 20);
-            // Branches Labeling finished, this should fix JAL labels as well.
-            if (n.matches())
-                imm = (imm - addr) & 0xfffff;
-            int imm20 = (imm >> 19) & 1; // 1 bit
-            int imm10_1 = (imm >> 9) & 0x3ff; // 10 bits
-            int imm11 = (imm >> 8) & 1; // 1 bit
-            int imm19_12 = imm & 0xff; // 8 bits
-
-            imm = (imm20 << 19) | (imm19_12 << 11) | (imm11 << 10) | imm10_1;
-            return encode(m.group(1), "none", imm, lineno);
-        }
-
-        String decode(int addr, int instr) {
-            return name + " " + rD(instr) + ", " + sImm(instr);
+            // return immediate as string in hex formatting
+            return "" + toHex(imm & 0xfffff, 5);
         }
     }
 
-    static Pattern pat_JumpLinkReg = Pattern.compile(_reg + "," + _reg + "," + _imm);
-    static Pattern pat_JumpReg = Pattern.compile(_reg);
-
-    private static class Jalr extends JInst {
-        boolean debug;
-
-        Jalr(String name, int op, int format, boolean debug) {
-            super(name, op, format);
-            this.debug = debug;
-        }
-
-        int encode(int lineno, int addr, String args, HashMap<String, Integer> sym) throws IOException {
-            Matcher m = pat_JumpLinkReg.matcher(args);
-            Matcher n = pat_JumpReg.matcher(args);
-            if (!m.matches() && !n.matches()) {
-                throw new ParseException(
-                        "Line " + (lineno + 1) + ": '" + name + "' expects xD, xS, Imm with args: " + args);
-            }
-            int imm = resolve(lineno, m.group(3), addr, sym, Type.ANY_ABSOLUTE, 12);
-            if (n.matches()) {
-                return encode("x1", m.group(1), 0, lineno);
-            }
-            return encode(m.group(1), m.group(2), imm, lineno);
-        }
-
-        String decode(int addr, int instr) {
-            if (format == 3) {
-                return name + " " + rs1(instr);
-            }
-            return name + " " + rD(instr) + ", " + rs1(instr) + ", " + sImm(instr);
-        }
-    }
-	*/
     static {
         // Last boolean is a debug boolean to enable Print Debugs for class testing
         new Word(".word", -1);
@@ -1029,8 +985,7 @@ public class ProgramAssembler {
         new ImmReg("slli", 0x13, 1, true, false);
         new ImmReg("srli", 0x13, 5, true, false);
         new ImmReg("srai", 0x13, 5, true, false);
-        new ImmReg("jalr", 0x67, 0, true, false);
-        
+
         // new ImmReg("mov", 0x33, 0, 0, false) // need to implement fully, mov,rd,rs
         new RegReg("add", 0x33, 0, 0, true);
         new RegReg("sub", 0x33, 0x20, 0, false);
@@ -1045,11 +1000,10 @@ public class ProgramAssembler {
         new RegReg("mul", 0x33, 1, 0, false);
         new LuiAPCInst("lui", 0x37, true);
         new LuiAPCInst("auipc", 0x17, false);
-        new LuiAPCInst("jal", 0x6F, false);
-        //new Jal("jal", 0x6f, 0, true);
-        // new Jal("j", 0x6f, 0, false); // need to implement fully, rd = x0, j imm
-        //new Jalr("jalr", 0x67, 1, true);
-        // new Jalr("jr", 0x67, 3, false); // need to implement fully, jr rs
+
+        // Updated 1/27/19
+        new ImmReg("jalr", 0x67, 0, true, false);
+        new JumpInstance("jal", 0x6f);
     }
 
     private static Segment[] pass2(ArrayList<String> lines, int start_address, HashMap<String, Integer> sym)
@@ -1143,39 +1097,13 @@ public class ProgramAssembler {
         return pass2(lines, start_address, sym);
     }
 
-    private static String disassemble(int code[], int start_addr) throws IOException {
-        StringBuffer buf = new StringBuffer();
-        for (int i = 0; i < code.length; i++) {
-            int instr = code[i];
-            int op = (instr >> 26) & 0x3f;
-            Command cmd;
-            if (op == 0) {
-                int f = (instr & 0x3f);
-                cmd = fcodes.get(new Integer(f));
-            } else if (op == 1) {
-                int subop = ((instr >> 16) & 0x1f);
-                cmd = socodes.get(new Integer(subop));
-            } else if (op == 0x10) {
-                int cop = ((instr >> 21) & 0x3f);
-                cmd = fcodes.get(new Integer(cop));
-            } else {
-                cmd = opcodes.get(new Integer(op));
-            }
-            if (cmd == null) {
-                throw new ParseException("Instruction " + (i + 1) + " unrecognized: " + toHex(instr, 8));
-            }
-            buf.append(cmd.decode(start_addr + 4 * i, instr) + "\n");
-        }
-        return buf.toString();
-    }
-
     static String disassemble(int instr, int addr) {
         int op = instr & 0x7f;
         int func3 = (instr >> 12) & 0x7;
         int func7 = (instr >> 25) & 0x7f;
         Command cmd = null;
         String name = "";
-        boolean invalid = false;
+        boolean invalid;
 
         if (op == 0x6f) {
             name = "jal";

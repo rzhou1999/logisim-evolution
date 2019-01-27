@@ -48,16 +48,12 @@ import com.cburch.logisim.prefs.AppPreferences;
 public class Main {
 	public static void main(String[] args) throws Exception {
 		// Set up the Look&Feel to match the platform
-		System.setProperty(
-				"com.apple.mrj.application.apple.menu.about.name",
-				"Logisim-evolution");
-		System.setProperty(
-				"apple.awt.application.name",
-				"Logisim-evolution");
+		System.setProperty("com.apple.mrj.application.apple.menu.about.name", "Logisim-evolution");
+		System.setProperty("apple.awt.application.name", "Logisim-evolution");
 		System.setProperty("apple.laf.useScreenMenuBar", "true");
 
 		try {
-			if (!GraphicsEnvironment.isHeadless())  {
+			if (!GraphicsEnvironment.isHeadless()) {
 				UIManager.setLookAndFeel(AppPreferences.LookAndFeel.get());
 			}
 		} catch (ClassNotFoundException e) {
@@ -95,23 +91,24 @@ public class Main {
 
 	final static Logger logger = LoggerFactory.getLogger(Main.class);
 
-	public static final LogisimVersion VERSION = LogisimVersion.get(2, 14, 7, 1);
+	// Updated 1/27/2019
+	public static final LogisimVersion VERSION = LogisimVersion.get(2, 14, 7, 2);
 
 	public static final String VERSION_NAME = VERSION.toString();
 	public static final int COPYRIGHT_YEAR = 2018;
 
 	public static boolean ANALYZE = true;
 	/**
-	 * This flag enables auto-updates. It is true by default, so that users
-	 * normally check for updates at startup. On the other hand, this might be
-	 * annoying for developers, therefore we let them disable it from the
-	 * command line with the '-noupdates' option.
+	 * This flag enables auto-updates. It is true by default, so that users normally
+	 * check for updates at startup. On the other hand, this might be annoying for
+	 * developers, therefore we let them disable it from the command line with the
+	 * '-noupdates' option.
 	 */
 	public static boolean UPDATE = true;
 
 	/**
 	 * URL for the automatic updater
 	 */
-	public static final String UPDATE_URL = "http://www.cs.cornell.edu/courses/cs3410/2018fa/logisim/logisim_evolution_version.xml";
+	public static final String UPDATE_URL = "http://www.cs.cornell.edu/courses/cs3410/2019sp/logisim/logisim_evolution_version.xml";
 
 }

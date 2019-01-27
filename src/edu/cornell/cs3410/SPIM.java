@@ -11,7 +11,7 @@
  *   should not be fetched in the first place.
  *
  * Author: hwang@cs.cornell.edu 
- */ 
+ */
 
 package edu.cornell.cs3410;
 
@@ -57,21 +57,20 @@ public class SPIM extends InstanceFactory {
   public static ExceptionUnit exceptionUnit;
   private static ClockState clockState;
 
-  private static final Attribute<Integer> ATTR_BUFFER
-    = Attributes.forIntegerRange("buflen",
-        Strings.getter("SPIMBufferLengthAttr"), 1, 256);
+  private static final Attribute<Integer> ATTR_BUFFER = Attributes.forIntegerRange("buflen",
+      Strings.getter("SPIMBufferLengthAttr"), 1, 256);
   private static Pattern pat1 = Pattern.compile("\\s*,\\s*");
-  private static HashMap <String, InstType> m;
+  private static HashMap<String, InstType> m;
 
-  public SPIM () {
-    super("SPIM", Strings.getter("MIPS Core with Exception Support"));
-    setAttributes(new Attribute[] {ATTR_BUFFER, StdAttr.EDGE_TRIGGER},
-        new Object[] { Integer.valueOf(32), StdAttr.TRIG_RISING});
+  public SPIM() {
+    super("SPIM", Strings.getter("Core with Exception Support"));
+    setAttributes(new Attribute[] { ATTR_BUFFER, StdAttr.EDGE_TRIGGER },
+        new Object[] { Integer.valueOf(32), StdAttr.TRIG_RISING });
     setOffsetBounds(Bounds.create(0, 0, WIDTH, HEIGHT));
     setIconName("SPIM.gif");
-    //setInstancePoker(Poker.class);
-    
-    m = new HashMap <String, InstType> ();
+    // setInstancePoker(Poker.class);
+
+    m = new HashMap<String, InstType>();
     set_support_mips_inst(m);
 
     clockState = new ClockState();
@@ -84,187 +83,172 @@ public class SPIM extends InstanceFactory {
     exceptionUnit = new ExceptionUnit();
 
     Port[] ps = new Port[10];
-    ps[CLK] = new Port(0, HEIGHT-20, Port.INPUT, 1);
-    ps[OP]  = new Port(20, HEIGHT, Port.INPUT, 32);
-    ps[PC]  = new Port(40, HEIGHT, Port.OUTPUT, 32);
+    ps[CLK] = new Port(0, HEIGHT - 20, Port.INPUT, 1);
+    ps[OP] = new Port(20, HEIGHT, Port.INPUT, 32);
+    ps[PC] = new Port(40, HEIGHT, Port.OUTPUT, 32);
     ps[ADDR] = new Port(WIDTH, 20, Port.OUTPUT, 24);
     ps[DOUT] = new Port(WIDTH, 40, Port.OUTPUT, 32);
     ps[DIN] = new Port(WIDTH, 60, Port.INPUT, 32);
     ps[STR] = new Port(WIDTH, 80, Port.OUTPUT, 1);
     ps[SEL] = new Port(WIDTH, 100, Port.OUTPUT, 4);
-    ps[LD]  = new Port(WIDTH, 120, Port.OUTPUT, 1);
+    ps[LD] = new Port(WIDTH, 120, Port.OUTPUT, 1);
     ps[IRQ_IN] = new Port(80, HEIGHT, Port.INPUT, 1);
     setPorts(ps);
   }
 
   @Override
-    public void propagate(InstanceState state) {
-      SPIMData data = SPIMData.get(state);
-      int op = state.getPortValue(OP).toIntValue();
+  public void propagate(InstanceState state) {
+    SPIMData data = SPIMData.get(state);
+    int op = state.getPortValue(OP).toIntValue();
 
-      boolean rising_triggered = clockState.updateClock(state.getPortValue(CLK), StdAttr.TRIG_RISING);
-      boolean level_triggered = clockState.updateClock(state.getPortValue(CLK), StdAttr.TRIG_LOW);
-      boolean allNOPs = false;
-      
-      if (rising_triggered) {
-        String line = ProgramAssembler.disassemble(op, fetch.PC);
-        line = pat1.matcher(line).replaceAll(" ");
-        line.replaceAll(",", " ");
-        Instruction inst = new Instruction(line);
+    boolean rising_triggered = clockState.updateClock(state.getPortValue(CLK), StdAttr.TRIG_RISING);
+    boolean level_triggered = clockState.updateClock(state.getPortValue(CLK), StdAttr.TRIG_LOW);
+    boolean allNOPs = false;
 
-        p("==========================");
-        p("+++++++Rising Edge++++++++");
-        p("fetched: " + Integer.toHexString(fetch.PC) + " " + line);
-        pf("PC      %20x%20x%20x%20x%20x\n", fetch.PC, decode.PC, execute.PC, memory.PC, wb.PC);
-               
-        // move instructions through pipeline by one stage
-        wb.inst = memory.inst;
-        memory.inst = execute.inst;
-        execute.inst = decode.inst;
-        decode.inst = fetch.inst;
+    if (rising_triggered) {
+      String line = ProgramAssembler.disassemble(op, fetch.PC);
+      line = pat1.matcher(line).replaceAll(" ");
+      line.replaceAll(",", " ");
+      Instruction inst = new Instruction(line);
 
-        wb.PC = memory.PC;
-        memory.PC = execute.PC;
-        execute.PC = decode.PC;
-        if (!fetch.stall){
-          decode.PC = fetch.PC;
-        }
-        staller.step(fetch, decode, execute, memory);
-        // load next Instruction 
-        fetch.step(inst, data, decode);
-        decode.step(data, memory, wb, fetch, execute);
-        execute.step(data, fetch, decode);
-        memory.step(state);
-        
-        print_mips_debug_info(fetch, decode, execute, memory, wb);
-        
-        // output current PC
-        state.setPort(PC, Value.createKnown(BitWidth.create(32), fetch.PC), 1);
+      p("==========================");
+      p("+++++++Rising Edge++++++++");
+      p("fetched: " + Integer.toHexString(fetch.PC) + " " + line);
+      pf("PC      %20x%20x%20x%20x%20x\n", fetch.PC, decode.PC, execute.PC, memory.PC, wb.PC);
 
-        // update Cause register
-        if(state.getPortValue(IRQ_IN).toIntValue()==1){
-          int cause = data.regs[CAUSE].toIntValue();
-          cause |= (E_CODE_HW << 2);
-          data.regs[CAUSE] = Value.createKnown(BitWidth.create(32), cause);
-          int status = data.regs[STATUS].toIntValue();
-          status |= 1 << KEYBOARD_IRQ;
-          data.regs[STATUS] = Value.createKnown(BitWidth.create(32), status);
-        } else {
-          
-        
-        }
+      // move instructions through pipeline by one stage
+      wb.inst = memory.inst;
+      memory.inst = execute.inst;
+      execute.inst = decode.inst;
+      decode.inst = fetch.inst;
 
-        // update Status register 
+      wb.PC = memory.PC;
+      memory.PC = execute.PC;
+      execute.PC = decode.PC;
+      if (!fetch.stall) {
+        decode.PC = fetch.PC;
+      }
+      staller.step(fetch, decode, execute, memory);
+      // load next Instruction
+      fetch.step(inst, data, decode);
+      decode.step(data, memory, wb, fetch, execute);
+      execute.step(data, fetch, decode);
+      memory.step(state);
+
+      print_mips_debug_info(fetch, decode, execute, memory, wb);
+
+      // output current PC
+      state.setPort(PC, Value.createKnown(BitWidth.create(32), fetch.PC), 1);
+
+      // update Cause register
+      if (state.getPortValue(IRQ_IN).toIntValue() == 1) {
+        int cause = data.regs[CAUSE].toIntValue();
+        cause |= (E_CODE_HW << 2);
+        data.regs[CAUSE] = Value.createKnown(BitWidth.create(32), cause);
         int status = data.regs[STATUS].toIntValue();
-        status |= 1<<4; // always in use mode
+        status |= 1 << KEYBOARD_IRQ;
         data.regs[STATUS] = Value.createKnown(BitWidth.create(32), status);
+      } else {
 
-        // update EPC regsiter 
-        exceptionUnit.step(fetch, decode, execute, memory, wb, state, data);
       }
 
-      if(state.getPortValue(CLK).toIntValue() == 0) {
-        p(".....falling edge.....");
-        allNOPs = (fetch.inst.opcode == 0) && (decode.inst.opcode == 0) &&
-          (execute.inst.opcode == 0) && (memory.inst.opcode == 0);;
-        wb.step(data, allNOPs);
-      }
+      // update Status register
+      int status = data.regs[STATUS].toIntValue();
+      status |= 1 << 4; // always in use mode
+      data.regs[STATUS] = Value.createKnown(BitWidth.create(32), status);
 
-      if(level_triggered) {
-        decode.step_level(data,  memory, wb, fetch, execute);
-        memory.step_level(state);
-      }
+      // update EPC regsiter
+      exceptionUnit.step(fetch, decode, execute, memory, wb, state, data);
     }
+
+    if (state.getPortValue(CLK).toIntValue() == 0) {
+      p(".....falling edge.....");
+      allNOPs = (fetch.inst.opcode == 0) && (decode.inst.opcode == 0) && (execute.inst.opcode == 0)
+          && (memory.inst.opcode == 0);
+      ;
+      wb.step(data, allNOPs);
+    }
+
+    if (level_triggered) {
+      decode.step_level(data, memory, wb, fetch, execute);
+      memory.step_level(state);
+    }
+  }
 
   @Override
-    public void paintInstance(InstancePainter painter) {
-      Graphics g = painter.getGraphics();
-      Bounds bounds = painter.getBounds();
-      Font font = g.getFont().deriveFont(9f);;
-      SPIMData data = SPIMData.get(painter);
-      boolean showState = painter.getShowState();
+  public void paintInstance(InstancePainter painter) {
+    Graphics g = painter.getGraphics();
+    Bounds bounds = painter.getBounds();
+    Font font = g.getFont().deriveFont(9f);
+    ;
+    SPIMData data = SPIMData.get(painter);
+    boolean showState = painter.getShowState();
 
-      painter.drawBounds();
-      painter.drawClock(CLK, Direction.EAST);
-      painter.drawPort(OP, "OP", Direction.SOUTH);
-      painter.drawPort(PC, "PC", Direction.SOUTH);
-      painter.drawPort(ADDR, "ADDR", Direction.WEST);
-      painter.drawPort(DOUT, "DOUT", Direction.WEST);
-      painter.drawPort(DIN, "DIN", Direction.WEST);
-      painter.drawPort(STR, "STR", Direction.WEST);
-      painter.drawPort(SEL, "SEL", Direction.WEST);
-      painter.drawPort(LD, "LD", Direction.WEST);
-      painter.drawPort(IRQ_IN, "IRQ_IN", Direction.SOUTH);
+    painter.drawBounds();
+    painter.drawClock(CLK, Direction.EAST);
+    painter.drawPort(OP, "OP", Direction.SOUTH);
+    painter.drawPort(PC, "PC", Direction.SOUTH);
+    painter.drawPort(ADDR, "ADDR", Direction.WEST);
+    painter.drawPort(DOUT, "DOUT", Direction.WEST);
+    painter.drawPort(DIN, "DIN", Direction.WEST);
+    painter.drawPort(STR, "STR", Direction.WEST);
+    painter.drawPort(SEL, "SEL", Direction.WEST);
+    painter.drawPort(LD, "LD", Direction.WEST);
+    painter.drawPort(IRQ_IN, "IRQ_IN", Direction.SOUTH);
 
-      // draw some rectangles
-      for (int i = 0; i < NUM_REGISTERS; i++) {
-        drawBox(g, bounds, Color.GRAY, i);
-      }
-
-      // draw register labels
-      for (int i = 0; i < NUM_REGISTERS; i++) {
-        GraphicsUtil.drawText(g, font, "$"+i,
-            bounds.getX() + boxX(i) - 1,
-            bounds.getY() + boxY(i) + (BOX_HEIGHT-1)/2,
-            GraphicsUtil.H_RIGHT, GraphicsUtil.V_CENTER);
-      }
-
-      if (!painter.getShowState()) {
-        return;
-      }
-
-      // draw state
-      g.setColor(Color.LIGHT_GRAY);
-      g.fillRect(bounds.getX() + boxX(0)+1, bounds.getY() + boxY(0)+1, 
-          BOX_WIDTH-1, BOX_HEIGHT-1);
-      g.setColor(Color.BLACK);
-
-      for (int i = 0; i < NUM_REGISTERS; i++) {
-        String s = (data.regs[i].isFullyDefined() ? data.regs[i].toHexString() : "?");
-        GraphicsUtil.drawText(g, font, s,
-            bounds.getX() + boxX(i) + BOX_WIDTH/2,
-            bounds.getY() + boxY(i) + (BOX_HEIGHT-1)/2,
-            GraphicsUtil.H_CENTER, GraphicsUtil.V_CENTER);
-      }
-
-      // draw boundary for mem Port
-      g.drawRect(bounds.getX()+ bounds.getWidth()/4*3 + 10, bounds.getY()+10, 
-          bounds.getWidth()/4 -10, bounds.getHeight()/2);
-      GraphicsUtil.drawCenteredText(g, "CPU + RAM CNTL", 
-          bounds.getX() + bounds.getWidth() / 4 * 3, 
-          bounds.getY() + bounds.getHeight() - 40);
-
-      // draw CP0 registers
-      GraphicsUtil.drawText(g, font, "BadVAddr ", 
-          bounds.getX() + cp_x(BADVADDR) + BOX_WIDTH/2,
-          bounds.getY() + cp_y(BADVADDR) + BOX_HEIGHT/2,
-          GraphicsUtil.H_CENTER, GraphicsUtil.V_CENTER);
-      GraphicsUtil.drawText(g, font, "Status ", 
-          bounds.getX() + cp_x(STATUS) + BOX_WIDTH/2,
-          bounds.getY() + cp_y(STATUS) + BOX_HEIGHT/2,
-          GraphicsUtil.H_CENTER, GraphicsUtil.V_CENTER);
-      GraphicsUtil.drawText(g, font, "Cause ", 
-          bounds.getX() + cp_x(CAUSE) + BOX_WIDTH/2,
-          bounds.getY() + cp_y(CAUSE) + BOX_HEIGHT/2,
-          GraphicsUtil.H_CENTER, GraphicsUtil.V_CENTER);
-      GraphicsUtil.drawText(g, font, "EPC ", 
-          bounds.getX() + cp_x(EPC) + BOX_WIDTH/2,
-          bounds.getY() + cp_y(EPC) + BOX_HEIGHT/2,
-          GraphicsUtil.H_CENTER, GraphicsUtil.V_CENTER);
-
-      for (int i = 34; i < 38; i++) {
-        String s = (data.regs[i].isFullyDefined() ? data.regs[i].toHexString() : "?");
-        GraphicsUtil.drawText(g, font, s,
-            bounds.getX() + cp_x(i) + BOX_WIDTH * 3 / 2,
-            bounds.getY() + cp_y(i) + (BOX_HEIGHT-1)/2,
-            GraphicsUtil.H_CENTER, GraphicsUtil.V_CENTER);
-        drawCPBox(g, bounds, Color.GRAY, i);
-      }
+    // draw some rectangles
+    for (int i = 0; i < NUM_REGISTERS; i++) {
+      drawBox(g, bounds, Color.GRAY, i);
     }
+
+    // draw register labels
+    for (int i = 0; i < NUM_REGISTERS; i++) {
+      GraphicsUtil.drawText(g, font, "$" + i, bounds.getX() + boxX(i) - 1,
+          bounds.getY() + boxY(i) + (BOX_HEIGHT - 1) / 2, GraphicsUtil.H_RIGHT, GraphicsUtil.V_CENTER);
+    }
+
+    if (!painter.getShowState()) {
+      return;
+    }
+
+    // draw state
+    g.setColor(Color.LIGHT_GRAY);
+    g.fillRect(bounds.getX() + boxX(0) + 1, bounds.getY() + boxY(0) + 1, BOX_WIDTH - 1, BOX_HEIGHT - 1);
+    g.setColor(Color.BLACK);
+
+    for (int i = 0; i < NUM_REGISTERS; i++) {
+      String s = (data.regs[i].isFullyDefined() ? data.regs[i].toHexString() : "?");
+      GraphicsUtil.drawText(g, font, s, bounds.getX() + boxX(i) + BOX_WIDTH / 2,
+          bounds.getY() + boxY(i) + (BOX_HEIGHT - 1) / 2, GraphicsUtil.H_CENTER, GraphicsUtil.V_CENTER);
+    }
+
+    // draw boundary for mem Port
+    g.drawRect(bounds.getX() + bounds.getWidth() / 4 * 3 + 10, bounds.getY() + 10, bounds.getWidth() / 4 - 10,
+        bounds.getHeight() / 2);
+    GraphicsUtil.drawCenteredText(g, "CPU + RAM CNTL", bounds.getX() + bounds.getWidth() / 4 * 3,
+        bounds.getY() + bounds.getHeight() - 40);
+
+    // draw CP0 registers
+    GraphicsUtil.drawText(g, font, "BadVAddr ", bounds.getX() + cp_x(BADVADDR) + BOX_WIDTH / 2,
+        bounds.getY() + cp_y(BADVADDR) + BOX_HEIGHT / 2, GraphicsUtil.H_CENTER, GraphicsUtil.V_CENTER);
+    GraphicsUtil.drawText(g, font, "Status ", bounds.getX() + cp_x(STATUS) + BOX_WIDTH / 2,
+        bounds.getY() + cp_y(STATUS) + BOX_HEIGHT / 2, GraphicsUtil.H_CENTER, GraphicsUtil.V_CENTER);
+    GraphicsUtil.drawText(g, font, "Cause ", bounds.getX() + cp_x(CAUSE) + BOX_WIDTH / 2,
+        bounds.getY() + cp_y(CAUSE) + BOX_HEIGHT / 2, GraphicsUtil.H_CENTER, GraphicsUtil.V_CENTER);
+    GraphicsUtil.drawText(g, font, "EPC ", bounds.getX() + cp_x(EPC) + BOX_WIDTH / 2,
+        bounds.getY() + cp_y(EPC) + BOX_HEIGHT / 2, GraphicsUtil.H_CENTER, GraphicsUtil.V_CENTER);
+
+    for (int i = 34; i < 38; i++) {
+      String s = (data.regs[i].isFullyDefined() ? data.regs[i].toHexString() : "?");
+      GraphicsUtil.drawText(g, font, s, bounds.getX() + cp_x(i) + BOX_WIDTH * 3 / 2,
+          bounds.getY() + cp_y(i) + (BOX_HEIGHT - 1) / 2, GraphicsUtil.H_CENTER, GraphicsUtil.V_CENTER);
+      drawCPBox(g, bounds, Color.GRAY, i);
+    }
+  }
 
   // Uncomment to debug
   private static <printabletostring> void p(printabletostring... args) {
-    for(printabletostring pts: args)
+    for (printabletostring pts : args)
       System.out.print(pts);
     System.out.println();
   }
@@ -273,15 +257,18 @@ public class SPIM extends InstanceFactory {
     System.out.format(fmt, args);
   }
 
-  private void print_mips_debug_info(Fetch f, Decode d, Execute e, Memory m, WriteBack w){
+  private void print_mips_debug_info(Fetch f, Decode d, Execute e, Memory m, WriteBack w) {
     pf("Inst    %20s%20s%20s%20s%20s\n", f.inst, d.inst, e.inst, m.inst, w.inst);
     pf("flush   %20b%20b%20b%20b%20b\n", f.inst.flush, d.inst.flush, e.inst.flush, m.inst.flush, w.inst.flush);
     pf("Rs      %20d%20d%20d%20d%20d\n", f.inst.rs, d.inst.rs, e.inst.rs, m.inst.rs, w.inst.rs);
     pf("Rt      %20d%20d%20d%20d%20d\n", f.inst.rt, d.inst.rt, e.inst.rt, m.inst.rt, w.inst.rt);
     pf("Rd      %20d%20d%20d%20d%20d\n", f.inst.rd, d.inst.rd, e.inst.rd, m.inst.rd, w.inst.rd);
-    pf("RsV(hex)%20x%20x%20x%20x%20x\n", f.inst.rsValue, d.inst.rsValue, e.inst.rsValue, m.inst.rsValue, w.inst.rsValue);
-    pf("RtV(hex)%20x%20x%20x%20x%20x\n", f.inst.rtValue, d.inst.rtValue, e.inst.rtValue, m.inst.rtValue, w.inst.rtValue);
-    pf("RdV(hex)%20x%20x%20x%20x%20x\n", f.inst.rdValue, d.inst.rdValue, e.inst.rdValue, m.inst.rdValue, w.inst.rdValue);
+    pf("RsV(hex)%20x%20x%20x%20x%20x\n", f.inst.rsValue, d.inst.rsValue, e.inst.rsValue, m.inst.rsValue,
+        w.inst.rsValue);
+    pf("RtV(hex)%20x%20x%20x%20x%20x\n", f.inst.rtValue, d.inst.rtValue, e.inst.rtValue, m.inst.rtValue,
+        w.inst.rtValue);
+    pf("RdV(hex)%20x%20x%20x%20x%20x\n", f.inst.rdValue, d.inst.rdValue, e.inst.rdValue, m.inst.rdValue,
+        w.inst.rdValue);
     p("..........................");
   }
 
@@ -293,16 +280,16 @@ public class SPIM extends InstanceFactory {
   // 4 - b+link, cmd rs, offset
   // 5 - beq, cmd rs, rt, offset
   // 6 - div, cmd rs, rt
-  // 7 - cop0, cmd rt, rd 
+  // 7 - cop0, cmd rt, rd
   // 8 - syscall, break, eret, nop
   // 9 - jalr rd, rs or jr rs
-  // 10 - jr, cmd rs 
+  // 10 - jr, cmd rs
   // 11 - lui, cmd rt, immediate
-  // 12 - sll, cmd rd, rt, immediate 
+  // 12 - sll, cmd rd, rt, immediate
   // 13 - sllv, cmd rd, rt, rs
   // opcode: internal opcode is assigned according to MIPS_Vol2.pdf page number.
   // NONE of the COP1 instructions are supported.
-  private void set_support_mips_inst (HashMap<String, InstType> m) {
+  private void set_support_mips_inst(HashMap<String, InstType> m) {
     m.put("add", new InstType(0, 31, 0));
     m.put("addi", new InstType(1, 34, 0));
     m.put("addiu", new InstType(1, 35, 0));
@@ -321,8 +308,8 @@ public class SPIM extends InstanceFactory {
     m.put("bne", new InstType(5, 76, 0));
     m.put("break", new InstType(12, 79, 0));
     m.put("div", new InstType(6, 109, 0));
-    m.put("divu", new InstType(6, 112, 0)); 
-    m.put("eret", new InstType(8, 113, 0)); 
+    m.put("divu", new InstType(6, 112, 0));
+    m.put("eret", new InstType(8, 113, 0));
     m.put("j", new InstType(3, 115, 0));
     m.put("jal", new InstType(3, 116, 0));
     m.put("jalr", new InstType(9, 117, 0));
@@ -380,7 +367,7 @@ public class SPIM extends InstanceFactory {
     public int opcode;
     public int supported;
 
-    InstType (int t, int n, int s) {
+    InstType(int t, int n, int s) {
       type = t;
       opcode = n;
       supported = s;
@@ -397,7 +384,7 @@ public class SPIM extends InstanceFactory {
     return (t == null) ? -1 : t.opcode;
   }
 
-  private int sign_extend(int v, int bit){
+  private int sign_extend(int v, int bit) {
     v <<= 32 - bit;
     v >>= 32 - bit;
     return v;
@@ -405,17 +392,17 @@ public class SPIM extends InstanceFactory {
 
   private class Instruction {
     public int opcode;
-    public int optype; 
+    public int optype;
     public int rs;
     public int rt;
     public int rd;
     public int immediate;
-    public long rdValue; 
+    public long rdValue;
     public long rsValue;
     public long rtValue;
     public String instructionString;
 
-    private boolean ok; //check validity of Instruction
+    private boolean ok; // check validity of Instruction
     public boolean flush; // indicate if the instruction has been flushed.
     public boolean wbFlush; // indicate when instruction is in writeback and fetch.
     public boolean forwardRsFlag; // indicate Rs value of prev inst is need.
@@ -423,7 +410,7 @@ public class SPIM extends InstanceFactory {
 
     private boolean isImmediateInstruction;
 
-    Instruction(String temp){
+    Instruction(String temp) {
       StringTokenizer tokens = new StringTokenizer(temp, " ");
       String op = "", t1 = "", t2 = "", t3 = "";
 
@@ -438,7 +425,7 @@ public class SPIM extends InstanceFactory {
       forwardRtFlag = false;
 
       /* aka 'Stall' */
-      if(temp.equals("NOP")) { 
+      if (temp.equals("NOP")) {
         instructionString = "NOP";
         rd = 0;
         rt = 0;
@@ -448,131 +435,126 @@ public class SPIM extends InstanceFactory {
         return;
       }
 
-trying:
-      try 
-      {
+      trying: try {
         op = tokens.nextToken();
         optype = get_inst_type(op);
 
-        if(tokens.hasMoreTokens())
+        if (tokens.hasMoreTokens())
           t1 = tokens.nextToken();
-        if(tokens.hasMoreTokens())
+        if (tokens.hasMoreTokens())
           t2 = tokens.nextToken();
-        if(tokens.hasMoreTokens())
+        if (tokens.hasMoreTokens())
           t3 = tokens.nextToken();
-        
+
         switch (optype) {
-          case 0:
+        case 0:
+          rd = Integer.parseInt(t1.substring(1));
+          rs = Integer.parseInt(t2.substring(1));
+          rt = Integer.parseInt(t3.substring(1));
+          break;
+        case 1:
+          rt = Integer.parseInt(t1.substring(1));
+          rs = Integer.parseInt(t2.substring(1));
+          rd = rt;
+          isImmediateInstruction = true;
+          immediate = Integer.parseInt(t3.substring(2), 16);
+          break;
+        case 2:
+          rt = Integer.parseInt(t1.substring(1));
+          rs = Integer.parseInt(t2.substring(t2.indexOf("$") + 1, t2.indexOf(")")));
+          immediate = Integer.parseInt(t2.substring(2, t2.indexOf("(")), 16);
+          rd = rt;
+          break;
+        case 3:
+          immediate = Integer.parseInt(t1.substring(2), 16);
+          break;
+        case 4:
+          rs = Integer.parseInt(t1.substring(1));
+          immediate = Integer.parseInt(t2.substring(2), 16);
+          opcode = get_inst_opcode(op);
+          break;
+        case 5:
+          rt = Integer.parseInt(t1.substring(1));
+          rs = Integer.parseInt(t2.substring(1));
+          immediate = Integer.parseInt(t3.substring(2), 16);
+          break;
+        case 6:
+          rs = Integer.parseInt(t1.substring(1));
+          rt = Integer.parseInt(t2.substring(1));
+          break;
+        case 7:
+          rt = Integer.parseInt(t1.substring(1));
+          rd = Integer.parseInt(t2.substring(1));
+          break;
+        case 8: // syscall
+          break;
+        case 9:
+          if (t2 != "") {
             rd = Integer.parseInt(t1.substring(1));
             rs = Integer.parseInt(t2.substring(1));
-            rt = Integer.parseInt(t3.substring(1));
-            break;
-          case 1:
-            rt = Integer.parseInt(t1.substring(1));
-            rs = Integer.parseInt(t2.substring(1));
-            rd = rt;
-            isImmediateInstruction = true;
-            immediate = Integer.parseInt(t3.substring(2), 16);
-            break;
-          case 2:
-            rt = Integer.parseInt(t1.substring(1));
-            rs = Integer.parseInt(t2.substring(t2.indexOf("$")+1, t2.indexOf(")")));
-            immediate = Integer.parseInt(t2.substring(2, t2.indexOf("(")), 16);
-            rd = rt;
-            break;
-          case 3:
-            immediate = Integer.parseInt(t1.substring(2), 16);
-            break;
-          case 4:
+          } else {
             rs = Integer.parseInt(t1.substring(1));
-            immediate = Integer.parseInt(t2.substring(2), 16);
-            opcode = get_inst_opcode(op);
-            break;
-          case 5:
-            rt = Integer.parseInt(t1.substring(1));
-            rs = Integer.parseInt(t2.substring(1));
-            immediate = Integer.parseInt(t3.substring(2), 16);
-            break;
-          case 6:
-            rs = Integer.parseInt(t1.substring(1));
-            rt = Integer.parseInt(t2.substring(1));
-            break;
-          case 7:
-            rt = Integer.parseInt(t1.substring(1));
-            rd = Integer.parseInt(t2.substring(1));
-            break;
-          case 8: // syscall
-            break;
-          case 9:
-            if (t2 != "") {
-              rd = Integer.parseInt(t1.substring(1));
-              rs = Integer.parseInt(t2.substring(1));
-            } else {
-              rs = Integer.parseInt(t1.substring(1));
-              rd = 31;
-            }
-            break;
-          case 10:
-            rs = Integer.parseInt(t1.substring(1));
-            break;
-          case 11: // lui rt, immediate
-            rt = Integer.parseInt(t1.substring(1));
-            rd = rt;
-            isImmediateInstruction = true;
-            immediate = Integer.parseInt(t2.substring(2), 16);
-            break;
-          case 12: 
-            rd = Integer.parseInt(t1.substring(1));
-            rt = Integer.parseInt(t2.substring(1));
-            immediate = Integer.parseInt(t3);
-            break;
-          case 13:
-            rd = Integer.parseInt(t1.substring(1));
-            rt = Integer.parseInt(t2.substring(1));
-            rs = Integer.parseInt(t3.substring(1));
-            break;
-          default:
-            ok = false;
-            break trying;
+            rd = 31;
+          }
+          break;
+        case 10:
+          rs = Integer.parseInt(t1.substring(1));
+          break;
+        case 11: // lui rt, immediate
+          rt = Integer.parseInt(t1.substring(1));
+          rd = rt;
+          isImmediateInstruction = true;
+          immediate = Integer.parseInt(t2.substring(2), 16);
+          break;
+        case 12:
+          rd = Integer.parseInt(t1.substring(1));
+          rt = Integer.parseInt(t2.substring(1));
+          immediate = Integer.parseInt(t3);
+          break;
+        case 13:
+          rd = Integer.parseInt(t1.substring(1));
+          rt = Integer.parseInt(t2.substring(1));
+          rs = Integer.parseInt(t3.substring(1));
+          break;
+        default:
+          ok = false;
+          break trying;
         }
         opcode = get_inst_opcode(op);
-      }
-      catch (NumberFormatException e) {
+      } catch (NumberFormatException e) {
         System.out.println(e.toString());
         ok = false;
-      }
-      catch (NoSuchElementException e) {
+      } catch (NoSuchElementException e) {
         System.out.println(e.toString());
         ok = false;
-      }
-      catch (StringIndexOutOfBoundsException e) {
+      } catch (StringIndexOutOfBoundsException e) {
         System.out.println(e.toString());
         ok = false;
       }
     }
 
-    public boolean valid() { 
-      return ok; 
+    public boolean valid() {
+      return ok;
     }
 
-    public boolean is_immediate() { 
-      return isImmediateInstruction; 
+    public boolean is_immediate() {
+      return isImmediateInstruction;
     }
-    
+
     public boolean is_load() {
       return (opcode == 121 || opcode == 122 || opcode == 125 || opcode == 126 || opcode == 130);
     }
 
-    public boolean is_ji(){
+    public boolean is_ji() {
       return (opcode == 115 || opcode == 116);
     }
 
-    public boolean is_jr(){
+    public boolean is_jr() {
       return (opcode == 117 || opcode == 119);
     }
 
-    public String toString() { 
-      return (instructionString); 
+    public String toString() {
+      return (instructionString);
     }
   }
 
@@ -582,38 +564,31 @@ trying:
     private boolean id_ex_load_use;
     private boolean id_mem_load_use;
 
-    public Staller(){
+    public Staller() {
       _id_ex_load_use = false;
       id_ex_load_use = false;
       id_mem_load_use = false;
     }
-    
-    public void step(Fetch fetch, Decode decode, Execute execute, Memory mem){
+
+    public void step(Fetch fetch, Decode decode, Execute execute, Memory mem) {
       id_ex_load_use = _id_ex_load_use;
 
-      if (((decode.inst.rs == execute.inst.rd) ||
-          (decode.inst.rt == execute.inst.rd) && 
-           (decode.inst.is_immediate() == false)) &&
-          (execute.inst.is_load()) &&
-          (execute.inst.rd != 0))
-      {
+      if (((decode.inst.rs == execute.inst.rd)
+          || (decode.inst.rt == execute.inst.rd) && (decode.inst.is_immediate() == false)) && (execute.inst.is_load())
+          && (execute.inst.rd != 0)) {
         _id_ex_load_use = true;
         p("staller: id_ex_load_use TRUE!");
       } else {
         _id_ex_load_use = false;
       }
 
-      if (((decode.inst.rs == mem.inst.rd) ||
-          (decode.inst.rt == mem.inst.rd) &&
-           (decode.inst.is_immediate() == false)) &&
-          (mem.inst.is_load()) &&
-          (mem.inst.rd != 0))
-      {
+      if (((decode.inst.rs == mem.inst.rd) || (decode.inst.rt == mem.inst.rd) && (decode.inst.is_immediate() == false))
+          && (mem.inst.is_load()) && (mem.inst.rd != 0)) {
         id_mem_load_use = true;
       } else {
         id_mem_load_use = false;
       }
-      
+
       if (id_ex_load_use || id_mem_load_use || _id_ex_load_use) {
         p("staller:" + id_ex_load_use + " " + _id_ex_load_use + " " + id_mem_load_use);
         fetch.stall = true;
@@ -626,14 +601,14 @@ trying:
   }
 
   // handles exception.
-  private class ExceptionUnit{
+  private class ExceptionUnit {
     private boolean handle_exception;
-    
-    public ExceptionUnit(){
+
+    public ExceptionUnit() {
       handle_exception = false;
     }
 
-    public void step(Fetch f, Decode d, Execute e, Memory m, WriteBack w, InstanceState state, SPIMData data){
+    public void step(Fetch f, Decode d, Execute e, Memory m, WriteBack w, InstanceState state, SPIMData data) {
       int status = data.regs[STATUS].toIntValue();
       int irq_enable = (status &= 0x1);
       if (irq_enable > 0) {
@@ -646,10 +621,10 @@ trying:
         data.regs[EPC] = Value.createKnown(BitWidth.create(32), f.PC); // Save current PC.
         // disable hardware interrupt
         p("Status =" + Integer.toHexString(status));
-        status &= -2; // 
+        status &= -2; //
         p("Status =" + Integer.toHexString(status));
         data.regs[STATUS] = Value.createKnown(BitWidth.create(32), status);
-        
+
         // execute exception handler
         f.PC = 0x800000;
       }
@@ -667,64 +642,64 @@ trying:
 
     public void step(SPIMData data, boolean allNOPs) {
       switch (inst.optype) {
-        case 0:
-        case 3:
-        case 9:
-        case 12:
-        case 13:
-          if (inst.rd != 0) {
-            if (inst.flush == false) {
-              if (inst.rd < NUM_REGISTERS) {
-                Value v = Value.createKnown(BitWidth.create(32), (int)(inst.rdValue));
-                data.regs[inst.rd] = v;
-                p("Reg[" + inst.rd + "]=" + Long.toHexString(inst.rdValue & 0xFFFFFFFFL));
-              } else {
-                throw new IllegalArgumentException("Write address invalid: email hwang@cs and tell him!");
-              }
+      case 0:
+      case 3:
+      case 9:
+      case 12:
+      case 13:
+        if (inst.rd != 0) {
+          if (inst.flush == false) {
+            if (inst.rd < NUM_REGISTERS) {
+              Value v = Value.createKnown(BitWidth.create(32), (int) (inst.rdValue));
+              data.regs[inst.rd] = v;
+              p("Reg[" + inst.rd + "]=" + Long.toHexString(inst.rdValue & 0xFFFFFFFFL));
+            } else {
+              throw new IllegalArgumentException("Write address invalid: email hwang@cs and tell him!");
             }
           }
-          break;
-        case 1:
-        case 2:
-        case 11:
-          if (inst.rt != 0) {
-            if (inst.flush == false) {
-              if (inst.rt < NUM_REGISTERS) {
-                Value v = Value.createKnown(BitWidth.create(32), (int)(inst.rtValue));
-                data.regs[inst.rt] = v;
-                p("Reg[" + inst.rt + "]=" + Long.toHexString(inst.rtValue & 0xFFFFFFFFL));
-              }
-            }
-          }
-          break;
-        case 7: // MTC, MFC
-          if (inst.opcode == 163) {
-            if ((inst.rt != 0) && (inst.flush == false)) {
-              Value v = Value.createKnown(BitWidth.create(32), (int)(inst.rtValue));
-              switch(inst.rd) {
-                case 8:
-                  data.regs[BADVADDR] = v;
-                  break;
-                case 12:
-                  data.regs[STATUS] = v;
-                  break;
-                case 13:
-                  data.regs[CAUSE] = v;
-                  break;
-                default:
-                  p("nothing");
-                  break;
-              }
-            }
-          } else if(inst.opcode == 143) {
-            if ((inst.rd != 0) && (inst.flush == false)) {
-              Value v = Value.createKnown(BitWidth.create(32), (int)(inst.rdValue));
+        }
+        break;
+      case 1:
+      case 2:
+      case 11:
+        if (inst.rt != 0) {
+          if (inst.flush == false) {
+            if (inst.rt < NUM_REGISTERS) {
+              Value v = Value.createKnown(BitWidth.create(32), (int) (inst.rtValue));
               data.regs[inst.rt] = v;
+              p("Reg[" + inst.rt + "]=" + Long.toHexString(inst.rtValue & 0xFFFFFFFFL));
             }
           }
-          break;
-        default:
-          break;
+        }
+        break;
+      case 7: // MTC, MFC
+        if (inst.opcode == 163) {
+          if ((inst.rt != 0) && (inst.flush == false)) {
+            Value v = Value.createKnown(BitWidth.create(32), (int) (inst.rtValue));
+            switch (inst.rd) {
+            case 8:
+              data.regs[BADVADDR] = v;
+              break;
+            case 12:
+              data.regs[STATUS] = v;
+              break;
+            case 13:
+              data.regs[CAUSE] = v;
+              break;
+            default:
+              p("nothing");
+              break;
+            }
+          }
+        } else if (inst.opcode == 143) {
+          if ((inst.rd != 0) && (inst.flush == false)) {
+            Value v = Value.createKnown(BitWidth.create(32), (int) (inst.rdValue));
+            data.regs[inst.rt] = v;
+          }
+        }
+        break;
+      default:
+        break;
       }
     }
   }
@@ -743,7 +718,7 @@ trying:
       int ld = 0;
       long val_to_mem = 0;
 
-      if(inst.flush == true) {
+      if (inst.flush == true) {
         inst.wbFlush = true;
         return;
       } else {
@@ -751,14 +726,14 @@ trying:
       }
 
       if (is_mem_write()) {
-        memAddr = (int)((inst.rsValue & 0xFFFFFFFFL) + inst.immediate);
+        memAddr = (int) ((inst.rsValue & 0xFFFFFFFFL) + inst.immediate);
         if (is_byte_access()) {
           p("byte access");
-          val_to_mem = ((inst.rtValue & 0xFFL) << (8*(memAddr & 3)));
+          val_to_mem = ((inst.rtValue & 0xFFL) << (8 * (memAddr & 3)));
           sel = 1 << (memAddr & 3);
-        } else if (is_half_word_access()){
+        } else if (is_half_word_access()) {
           p("half word access");
-          val_to_mem = ((inst.rtValue & 0xFFFFL) << (16*(memAddr & 3)));
+          val_to_mem = ((inst.rtValue & 0xFFFFL) << (16 * (memAddr & 3)));
           sel = 3 << (memAddr & 3); // FIX
         } else { // word access
           p("word access");
@@ -767,27 +742,27 @@ trying:
         }
         p("tomem: " + Long.toHexString(val_to_mem));
 
-        if (is_byte_access()){
+        if (is_byte_access()) {
           memAddr >>= 2;
-        } else if (is_half_word_access()){
+        } else if (is_half_word_access()) {
           memAddr >>= 1;
-        } 
+        }
 
         state.setPort(ADDR, Value.createKnown(BitWidth.create(24), memAddr), 1);
-        state.setPort(DOUT, Value.createKnown(BitWidth.create(32), (int)val_to_mem), 1);
+        state.setPort(DOUT, Value.createKnown(BitWidth.create(32), (int) val_to_mem), 1);
         state.setPort(STR, Value.createKnown(BitWidth.create(1), 1), 20);
         state.setPort(LD, Value.createKnown(BitWidth.create(1), 0), 20);
         state.setPort(SEL, Value.createKnown(BitWidth.create(4), sel), 10);
-      } else if (is_mem_read()){
+      } else if (is_mem_read()) {
         sel = 0xF;
-      
+
         p("read memory!");
-        if (is_byte_access()){
-          memAddr = (int)(inst.rsValue + (((inst.immediate & 0xFFFFFFFCL) << 48) >> 48));
-        } else if (is_half_word_access()){
-          memAddr = (int)(inst.rsValue + (((inst.immediate & 0xFFFFFFFEL) << 48) >> 48));
+        if (is_byte_access()) {
+          memAddr = (int) (inst.rsValue + (((inst.immediate & 0xFFFFFFFCL) << 48) >> 48));
+        } else if (is_half_word_access()) {
+          memAddr = (int) (inst.rsValue + (((inst.immediate & 0xFFFFFFFEL) << 48) >> 48));
         } else {
-          memAddr = (int)(inst.rsValue + (((inst.immediate) << 48) >> 48));
+          memAddr = (int) (inst.rsValue + (((inst.immediate) << 48) >> 48));
           p("word access: " + Integer.toHexString(memAddr));
         }
 
@@ -795,24 +770,23 @@ trying:
         state.setPort(STR, Value.createKnown(BitWidth.create(1), 0), 1);
         state.setPort(LD, Value.createKnown(BitWidth.create(1), 1), 1);
         state.setPort(SEL, Value.createKnown(BitWidth.create(4), sel), 1);
-      } else { 
+      } else {
         state.setPort(STR, Value.createKnown(BitWidth.create(1), 0), 0);
         state.setPort(LD, Value.createKnown(BitWidth.create(1), 0), 0);
         state.setPort(SEL, Value.createKnown(BitWidth.create(4), 0), 0);
       }
     }
-    
-    public void step_level(InstanceState state){
+
+    public void step_level(InstanceState state) {
       boolean forwardflag = false;
       long val_from_mem = 0;
 
-      if ((memAddr == wb.inst.rsValue) && (wb.inst.opcode == 208))
-      {
+      if ((memAddr == wb.inst.rsValue) && (wb.inst.opcode == 208)) {
         forwardflag = true;
       }
 
-      if (is_mem_read()){
-        if(forwardflag) {
+      if (is_mem_read()) {
+        if (forwardflag) {
           val_from_mem = wb.inst.rtValue;
         } else {
           val_from_mem = state.getPortValue(DIN).toIntValue();
@@ -825,13 +799,13 @@ trying:
             val_from_mem <<= (56 - (8 * (inst.immediate & 3)));
             val_from_mem >>= (56 - (8 * (inst.immediate & 3)));
           }
-        } else if (is_half_word_access()){
+        } else if (is_half_word_access()) {
           val_from_mem = val_from_mem & (0xFFFF << (16 * (inst.immediate & 3)));
           if (is_zero_extend()) {
-            val_from_mem >>= (16 * ((inst.immediate & 3)>>1));
+            val_from_mem >>= (16 * ((inst.immediate & 3) >> 1));
           } else {
-            val_from_mem <<= (48 - (16 * ((inst.immediate & 3)>>1)));
-            val_from_mem >>= (48 - (16 * ((inst.immediate & 3)>>1)));
+            val_from_mem <<= (48 - (16 * ((inst.immediate & 3) >> 1)));
+            val_from_mem >>= (48 - (16 * ((inst.immediate & 3) >> 1)));
           }
         }
         inst.rtValue = val_from_mem;
@@ -839,32 +813,31 @@ trying:
     }
 
     private boolean is_mem_write() {
-      if (inst.opcode == 185 || inst.opcode == 192 || inst.opcode == 208) 
-        return true;    
-      return false;
-    }
-
-    private boolean is_mem_read(){
-      if (inst.opcode == 121 || inst.opcode == 122 || inst.opcode == 125 ||
-          inst.opcode == 126 || inst.opcode == 130)
+      if (inst.opcode == 185 || inst.opcode == 192 || inst.opcode == 208)
         return true;
       return false;
     }
 
-    private boolean is_byte_access(){
+    private boolean is_mem_read() {
+      if (inst.opcode == 121 || inst.opcode == 122 || inst.opcode == 125 || inst.opcode == 126 || inst.opcode == 130)
+        return true;
+      return false;
+    }
+
+    private boolean is_byte_access() {
       if (inst.opcode == 121 || inst.opcode == 122 || inst.opcode == 185)
         return true;
       return false;
     }
 
-    private boolean is_half_word_access(){
-      if (inst.opcode == 125 || inst.opcode == 126 || inst.opcode == 192) 
+    private boolean is_half_word_access() {
+      if (inst.opcode == 125 || inst.opcode == 126 || inst.opcode == 192)
         return true;
       return false;
     }
 
-    private boolean is_zero_extend(){
-      if (inst.opcode == 122 || inst.opcode == 126) 
+    private boolean is_zero_extend() {
+      if (inst.opcode == 122 || inst.opcode == 126)
         return true;
       return false;
     }
@@ -878,228 +851,228 @@ trying:
 
     public void step(SPIMData data, Fetch fetch, Decode decode) {
       switch (inst.opcode) {
-        case 31:
-          inst.rdValue = inst.rsValue + inst.rtValue;
-          break;
-        case 34:
-          inst.immediate <<= 16;
-          inst.immediate >>= 16;
-          inst.rtValue = inst.rsValue + inst.immediate; // exception
-          inst.rdValue = inst.rtValue; 
-          break;
-        case 35:
-          inst.immediate <<= 16;
-          inst.immediate >>= 16;
-          inst.rtValue = inst.rsValue + inst.immediate;
-          inst.rdValue = inst.rtValue; 
-          break;
-        case 36:
-          inst.rdValue = inst.rsValue + inst.rtValue;
-          break;
-        case 37:
-          inst.rdValue = inst.rsValue & inst.rtValue;
-          break;
-        case 38:
-          inst.rtValue = inst.rsValue & inst.immediate;
-          inst.rdValue = inst.rtValue; 
-          break;
-        case 39: // B
-          break;
-        case 40: // BAL
-          break;
-        case 55: // BEQ
-          break;
-        case 59: // BGEZAL
-          break;
-        case 64:
-          break;
-        case 67:
-          break;
-        case 70:
-          break;
-        case 71: // BLTZAL
-          break;
-        case 76:
-          fetch.inst.flush = true;
-          decode.inst.flush = false;
-          break;
-        case 79: // BREAK
-          break;
-        case 95: // CFC2
-          break;
-        case 99: // COP2
-          break;
-        case 103: // CTC2
-          break;
-        case 109:
-          inst.rdValue = (inst.rsValue & 0xFF) / (inst.rtValue & 0xFF);
-          break;
-        case 112:
-          inst.rdValue = (inst.rsValue & 0xFF) / (inst.rtValue & 0xFF);
-          break;
-        case 113: // ERET
-          fetch.PC = data.regs[EPC].toIntValue();
-          fetch.inst.flush=true;
-          decode.inst.flush=true;
-          break;
-        case 115: // J
-          fetch.PC = (int)(inst.immediate & 0xFFFFFFFFL);
-          fetch.inst.flush = true;
-          decode.inst.flush = false;
-          break;
-        case 116: // JAL
-          inst.rd = 31;
-          inst.rdValue = PC + 8;
-          fetch.PC = (int)(inst.immediate & 0xFFFFFFFFL);
-          fetch.inst.flush = true;
-          decode.inst.flush = false;
-          break;
-        case 117: // JALR
-          inst.rdValue = PC + 8;
-          fetch.PC = (int)(inst.rsValue & 0xFFFFFFFFL);
-          fetch.inst.flush = true;
-          decode.inst.flush = false;
-          break;
-        case 119: // JR
-          fetch.PC = (int)(inst.rsValue & 0xFFFFFFFFL);
-          fetch.inst.flush = true;
-          decode.inst.flush = false;
-          break;
-        case 121: // LB
-          break;
-        case 122: // LBU
-          break;
-        case 125: // LH
-          break;
-        case 126: // LHU
-          break;
-        case 127: // LL
-          break;
-        case 129:
-          inst.rtValue = inst.immediate << 16;
-          inst.rdValue = inst.rtValue; 
-          break;
-        case 130: // LW
-          break;
-        case 143: // MFC0
-          p("handle MFC0");
-          break;
-        case 152:
-          if (inst.rtValue != 0) 
-            inst.rdValue = inst.rsValue;
-          break;
-        case 158:
-          if (inst.rtValue == 0)
-            inst.rdValue = inst.rsValue;
-            inst.rdValue = inst.rdValue;
-          break;
-        case 163: //MTC0
-          break;
-        case 169:
-          inst.rdValue = (inst.rsValue & 0xFF) * (inst.rtValue & 0xFF);
-          break;
-        case 174: //NOP
-          break;
-        case 175:
-          inst.rdValue = ~(inst.rsValue | inst.rtValue);
-          break;
-        case 176:
-          inst.rdValue = inst.rsValue | inst.rtValue;
-          break;
-        case 177:
-          inst.rtValue = inst.rsValue | inst.immediate;
-          inst.rdValue = inst.rtValue; 
-          break;
-        case 185: //SB
-          break;
-        case 192: //SH
-          break;
-        case 193:
-          inst.rdValue = inst.rtValue << inst.immediate;
-          break;
-        case 194:
-          inst.rdValue = inst.rtValue << (inst.rsValue & 0x1F);
-          break;
-        case 195:
-          inst.rdValue = (inst.rsValue < inst.rtValue) ? 1 : 0;
-          break;
-        case 196:
-          inst.immediate <<= 16;
-          inst.immediate >>= 16;
-          inst.rtValue = (inst.rsValue < inst.immediate) ? 1 : 0;
-          inst.rdValue = inst.rtValue; 
-          break;
-        case 197:
-          inst.immediate <<= 16;
-          inst.immediate >>= 16;
-          inst.rtValue = ((inst.rsValue & 0xFFFFFFFFL) < (inst.immediate & 0xFFFFFFFFL)) ? 1 : 0;
-          inst.rdValue = inst.rtValue; 
-          break;
-        case 198:
-          inst.rdValue = ((inst.rsValue & 0xFFFFFFFFL) < (inst.rtValue & 0xFFFFFFFFL)) ? 1 : 0;
-          break;
-        case 200:
-          inst.rdValue = inst.rtValue >> inst.immediate;
-          break;
-        case 201:
-          inst.rdValue = inst.rtValue >> (inst.rsValue & 0x1F);
-          break;
-        case 202:
-          inst.rtValue <<= 32; 
-          inst.rtValue >>>= inst.immediate;
-          inst.rtValue >>= 32;
-          inst.rdValue = inst.rtValue;
-          break;
-        case 203:
-          inst.rdValue = (inst.rtValue & 0xFFFFFFFFL) >>> (inst.rsValue & 0x1F);
-          break;
-        case 205:
-          inst.rdValue = inst.rsValue - inst.rtValue; // Exception?
-          break;
-        case 207:
-          inst.rdValue = inst.rsValue - inst.rtValue;
-          break;
-        case 208:
-          inst.rdValue = inst.rtValue; // SW
-          break;
-        case 219: // syscall
-          
-          break;
-        case 220: // trap
-          break;
-        case 221:
-          break;
-        case 222:
-          break;
-        case 223:
-          break;
-        case 224:
-          break;
-        case 225: // all traps
-          break;
-        case 233: // more traps
-          break;
-        case 234:
-          break;
-        case 235:
-          break;
-        case 236:
-          break;
-        case 237:
-          break;
-        case 238:
-          break;
-        case 243:
-          inst.rdValue = inst.rsValue ^ inst.rtValue;
-          break;
-        case 244:
-          inst.rtValue = inst.rsValue ^ inst.immediate;
-          inst.rdValue = inst.rtValue; 
+      case 31:
+        inst.rdValue = inst.rsValue + inst.rtValue;
+        break;
+      case 34:
+        inst.immediate <<= 16;
+        inst.immediate >>= 16;
+        inst.rtValue = inst.rsValue + inst.immediate; // exception
+        inst.rdValue = inst.rtValue;
+        break;
+      case 35:
+        inst.immediate <<= 16;
+        inst.immediate >>= 16;
+        inst.rtValue = inst.rsValue + inst.immediate;
+        inst.rdValue = inst.rtValue;
+        break;
+      case 36:
+        inst.rdValue = inst.rsValue + inst.rtValue;
+        break;
+      case 37:
+        inst.rdValue = inst.rsValue & inst.rtValue;
+        break;
+      case 38:
+        inst.rtValue = inst.rsValue & inst.immediate;
+        inst.rdValue = inst.rtValue;
+        break;
+      case 39: // B
+        break;
+      case 40: // BAL
+        break;
+      case 55: // BEQ
+        break;
+      case 59: // BGEZAL
+        break;
+      case 64:
+        break;
+      case 67:
+        break;
+      case 70:
+        break;
+      case 71: // BLTZAL
+        break;
+      case 76:
+        fetch.inst.flush = true;
+        decode.inst.flush = false;
+        break;
+      case 79: // BREAK
+        break;
+      case 95: // CFC2
+        break;
+      case 99: // COP2
+        break;
+      case 103: // CTC2
+        break;
+      case 109:
+        inst.rdValue = (inst.rsValue & 0xFF) / (inst.rtValue & 0xFF);
+        break;
+      case 112:
+        inst.rdValue = (inst.rsValue & 0xFF) / (inst.rtValue & 0xFF);
+        break;
+      case 113: // ERET
+        fetch.PC = data.regs[EPC].toIntValue();
+        fetch.inst.flush = true;
+        decode.inst.flush = true;
+        break;
+      case 115: // J
+        fetch.PC = (int) (inst.immediate & 0xFFFFFFFFL);
+        fetch.inst.flush = true;
+        decode.inst.flush = false;
+        break;
+      case 116: // JAL
+        inst.rd = 31;
+        inst.rdValue = PC + 8;
+        fetch.PC = (int) (inst.immediate & 0xFFFFFFFFL);
+        fetch.inst.flush = true;
+        decode.inst.flush = false;
+        break;
+      case 117: // JALR
+        inst.rdValue = PC + 8;
+        fetch.PC = (int) (inst.rsValue & 0xFFFFFFFFL);
+        fetch.inst.flush = true;
+        decode.inst.flush = false;
+        break;
+      case 119: // JR
+        fetch.PC = (int) (inst.rsValue & 0xFFFFFFFFL);
+        fetch.inst.flush = true;
+        decode.inst.flush = false;
+        break;
+      case 121: // LB
+        break;
+      case 122: // LBU
+        break;
+      case 125: // LH
+        break;
+      case 126: // LHU
+        break;
+      case 127: // LL
+        break;
+      case 129:
+        inst.rtValue = inst.immediate << 16;
+        inst.rdValue = inst.rtValue;
+        break;
+      case 130: // LW
+        break;
+      case 143: // MFC0
+        p("handle MFC0");
+        break;
+      case 152:
+        if (inst.rtValue != 0)
+          inst.rdValue = inst.rsValue;
+        break;
+      case 158:
+        if (inst.rtValue == 0)
+          inst.rdValue = inst.rsValue;
+        inst.rdValue = inst.rdValue;
+        break;
+      case 163: // MTC0
+        break;
+      case 169:
+        inst.rdValue = (inst.rsValue & 0xFF) * (inst.rtValue & 0xFF);
+        break;
+      case 174: // NOP
+        break;
+      case 175:
+        inst.rdValue = ~(inst.rsValue | inst.rtValue);
+        break;
+      case 176:
+        inst.rdValue = inst.rsValue | inst.rtValue;
+        break;
+      case 177:
+        inst.rtValue = inst.rsValue | inst.immediate;
+        inst.rdValue = inst.rtValue;
+        break;
+      case 185: // SB
+        break;
+      case 192: // SH
+        break;
+      case 193:
+        inst.rdValue = inst.rtValue << inst.immediate;
+        break;
+      case 194:
+        inst.rdValue = inst.rtValue << (inst.rsValue & 0x1F);
+        break;
+      case 195:
+        inst.rdValue = (inst.rsValue < inst.rtValue) ? 1 : 0;
+        break;
+      case 196:
+        inst.immediate <<= 16;
+        inst.immediate >>= 16;
+        inst.rtValue = (inst.rsValue < inst.immediate) ? 1 : 0;
+        inst.rdValue = inst.rtValue;
+        break;
+      case 197:
+        inst.immediate <<= 16;
+        inst.immediate >>= 16;
+        inst.rtValue = ((inst.rsValue & 0xFFFFFFFFL) < (inst.immediate & 0xFFFFFFFFL)) ? 1 : 0;
+        inst.rdValue = inst.rtValue;
+        break;
+      case 198:
+        inst.rdValue = ((inst.rsValue & 0xFFFFFFFFL) < (inst.rtValue & 0xFFFFFFFFL)) ? 1 : 0;
+        break;
+      case 200:
+        inst.rdValue = inst.rtValue >> inst.immediate;
+        break;
+      case 201:
+        inst.rdValue = inst.rtValue >> (inst.rsValue & 0x1F);
+        break;
+      case 202:
+        inst.rtValue <<= 32;
+        inst.rtValue >>>= inst.immediate;
+        inst.rtValue >>= 32;
+        inst.rdValue = inst.rtValue;
+        break;
+      case 203:
+        inst.rdValue = (inst.rtValue & 0xFFFFFFFFL) >>> (inst.rsValue & 0x1F);
+        break;
+      case 205:
+        inst.rdValue = inst.rsValue - inst.rtValue; // Exception?
+        break;
+      case 207:
+        inst.rdValue = inst.rsValue - inst.rtValue;
+        break;
+      case 208:
+        inst.rdValue = inst.rtValue; // SW
+        break;
+      case 219: // syscall
+
+        break;
+      case 220: // trap
+        break;
+      case 221:
+        break;
+      case 222:
+        break;
+      case 223:
+        break;
+      case 224:
+        break;
+      case 225: // all traps
+        break;
+      case 233: // more traps
+        break;
+      case 234:
+        break;
+      case 235:
+        break;
+      case 236:
+        break;
+      case 237:
+        break;
+      case 238:
+        break;
+      case 243:
+        inst.rdValue = inst.rsValue ^ inst.rtValue;
+        break;
+      case 244:
+        inst.rtValue = inst.rsValue ^ inst.immediate;
+        inst.rdValue = inst.rtValue;
       }
     }
   }
 
-  private class Decode extends Stage{
+  private class Decode extends Stage {
     private Vector<Integer> hazardList;
     private Instruction instructionSave;
     private int savePC;
@@ -1125,15 +1098,14 @@ trying:
     public Decode() {
       super();
       instructionSave = new Instruction("NOP");
-      hazardList = new Vector<Integer> (3);
+      hazardList = new Vector<Integer>(3);
       hazardList.addElement(new Integer(0));
       hazardList.addElement(new Integer(0));
       hazardList.addElement(new Integer(0));
     }
 
-    public void step(SPIMData data, Memory mem, 
-        WriteBack wb, Fetch fetch, Execute execute) {
-    
+    public void step(SPIMData data, Memory mem, WriteBack wb, Fetch fetch, Execute execute) {
+
       rs_ex_hazard = false;
       rt_ex_hazard = false;
       rs_mem_hazard = false;
@@ -1142,53 +1114,41 @@ trying:
       rt_wb_hazard = false;
 
       /* forwarding */
-      if ((execute.inst.flush == false) && 
-          inst.rs == (hazardList.elementAt(0)).intValue() &&
-          (hazardList.elementAt(0)).intValue() != 0)
-      {
+      if ((execute.inst.flush == false) && inst.rs == (hazardList.elementAt(0)).intValue()
+          && (hazardList.elementAt(0)).intValue() != 0) {
         rs_ex_hazard = true;
       }
 
-      if ((execute.inst.flush == false) &&
-          inst.rt == (hazardList.elementAt(0)).intValue() &&
-          (hazardList.elementAt(0)).intValue() != 0)
-      {
+      if ((execute.inst.flush == false) && inst.rt == (hazardList.elementAt(0)).intValue()
+          && (hazardList.elementAt(0)).intValue() != 0) {
         rt_ex_hazard = true;
       }
 
-      if ((mem.inst.flush == false) && 
-          inst.rs == (hazardList.elementAt(1)).intValue() &&
-          (hazardList.elementAt(1)).intValue() != 0)
-      {
+      if ((mem.inst.flush == false) && inst.rs == (hazardList.elementAt(1)).intValue()
+          && (hazardList.elementAt(1)).intValue() != 0) {
         rs_mem_hazard = true;
       }
 
-      if ((mem.inst.flush == false) &&
-          inst.rt == (hazardList.elementAt(1)).intValue() &&
-          (hazardList.elementAt(1)).intValue() != 0)
-      {
+      if ((mem.inst.flush == false) && inst.rt == (hazardList.elementAt(1)).intValue()
+          && (hazardList.elementAt(1)).intValue() != 0) {
         rt_mem_hazard = true;
       }
 
-      if ((wb.inst.flush == false) &&
-          inst.rs == (hazardList.elementAt(2)).intValue() &&
-          (hazardList.elementAt(2)).intValue() != 0)
-      {
+      if ((wb.inst.flush == false) && inst.rs == (hazardList.elementAt(2)).intValue()
+          && (hazardList.elementAt(2)).intValue() != 0) {
         rs_wb_hazard = true;
       }
 
-      if ((wb.inst.flush == false) &&
-          inst.rt == (hazardList.elementAt(2)).intValue() &&
-          (hazardList.elementAt(2)).intValue() != 0)
-      {
+      if ((wb.inst.flush == false) && inst.rt == (hazardList.elementAt(2)).intValue()
+          && (hazardList.elementAt(2)).intValue() != 0) {
         rt_wb_hazard = true;
       }
 
-      hazardList.setElementAt(hazardList.elementAt(1),2);
-      hazardList.setElementAt(hazardList.elementAt(0),1);
-      hazardList.setElementAt(new Integer(inst.rd),0);
-      
-      if(fetch.stall) {
+      hazardList.setElementAt(hazardList.elementAt(1), 2);
+      hazardList.setElementAt(hazardList.elementAt(0), 1);
+      hazardList.setElementAt(new Integer(inst.rd), 0);
+
+      if (fetch.stall) {
         instructionSave = inst;
         savePC = PC;
         isStall = true;
@@ -1205,9 +1165,9 @@ trying:
       }
     }
 
-    // execute when clock is low, to propagate value from staller and forwarder to fetch stage.
-    public void step_level(SPIMData data, Memory mem, 
-        WriteBack wb, Fetch fetch, Execute execute) {
+    // execute when clock is low, to propagate value from staller and forwarder to
+    // fetch stage.
+    public void step_level(SPIMData data, Memory mem, WriteBack wb, Fetch fetch, Execute execute) {
 
       p("---step level---");
       if (decode.nop) {
@@ -1218,18 +1178,18 @@ trying:
 
       if (inst.opcode == 143) {
         switch (inst.rd) {
-          case 8:
-            inst.rdValue = data.regs[BADVADDR].toIntValue();
-            break;
-          case 12:
-            inst.rdValue = data.regs[STATUS].toIntValue();
-            break;
-          case 13:
-            inst.rdValue = data.regs[CAUSE].toIntValue();
-            break;
-          case 14:
-            inst.rdValue = data.regs[EPC].toIntValue();
-            break;
+        case 8:
+          inst.rdValue = data.regs[BADVADDR].toIntValue();
+          break;
+        case 12:
+          inst.rdValue = data.regs[STATUS].toIntValue();
+          break;
+        case 13:
+          inst.rdValue = data.regs[CAUSE].toIntValue();
+          break;
+        case 14:
+          inst.rdValue = data.regs[EPC].toIntValue();
+          break;
         }
         return;
       }
@@ -1266,92 +1226,91 @@ trying:
       Value _vrd = data.regs[inst.rd];
       inst.rdValue = _vrd.toIntValue();
 
-      p("hazard: rs - ex, mem, wb: " + rs_ex_hazard + " " + rs_mem_hazard + " " +
-          rs_wb_hazard);
-      p("hazard: rt - ex, mem, wb: " + rt_ex_hazard + " " + rt_mem_hazard + " " +
-          rt_wb_hazard);
+      p("hazard: rs - ex, mem, wb: " + rs_ex_hazard + " " + rs_mem_hazard + " " + rs_wb_hazard);
+      p("hazard: rt - ex, mem, wb: " + rt_ex_hazard + " " + rt_mem_hazard + " " + rt_wb_hazard);
 
       branch_calc();
       jump_calc();
-     }
+    }
 
-    private void branch_calc(){
+    private void branch_calc() {
       int offset;
       offset = sign_extend(inst.immediate, 18);
       btarget = PC + offset;
 
-      switch(inst.opcode){
-        case 39: // B
-          branch_taken = true;
-          break;
-        case 40: // BAL
-          branch_taken = true;
-          inst.rd = 31;
-          inst.rdValue = PC + 8;
-          break;
-        case 55: // BEQ
-          branch_taken = (inst.rsValue == inst.rtValue);
-          break;
-        case 58: // BGEZ 
-          branch_taken = (inst.rsValue >= 0);
-          break;
-        case 64: // BGTZ 
-          branch_taken = (inst.rsValue > 0);
-          break;
-        case 67: // BLEZ 
-          branch_taken = (inst.rsValue <= 0);
-          break;
-        case 70: // BLTZ 
-          branch_taken = (inst.rsValue < 0);
-          break;
-        case 76: // BNE 
-          branch_taken = (inst.rsValue != inst.rtValue);
-          break;
-        default:
-          branch_taken = false;
-          btarget = 0;
-          break;
+      switch (inst.opcode) {
+      case 39: // B
+        branch_taken = true;
+        break;
+      case 40: // BAL
+        branch_taken = true;
+        inst.rd = 31;
+        inst.rdValue = PC + 8;
+        break;
+      case 55: // BEQ
+        branch_taken = (inst.rsValue == inst.rtValue);
+        break;
+      case 58: // BGEZ
+        branch_taken = (inst.rsValue >= 0);
+        break;
+      case 64: // BGTZ
+        branch_taken = (inst.rsValue > 0);
+        break;
+      case 67: // BLEZ
+        branch_taken = (inst.rsValue <= 0);
+        break;
+      case 70: // BLTZ
+        branch_taken = (inst.rsValue < 0);
+        break;
+      case 76: // BNE
+        branch_taken = (inst.rsValue != inst.rtValue);
+        break;
+      default:
+        branch_taken = false;
+        btarget = 0;
+        break;
       }
 
       p("branch_taken: " + branch_taken + " " + Integer.toHexString(btarget));
     }
 
-    private void jump_calc(){ //FIX
-      switch (inst.opcode){
-        case 115: // j
-          jitarget = ((PC & 0xF0000000) | inst.immediate);
-          jump = true;
-          p("jitarget: " + Integer.toHexString(jitarget));
-          break;
-        case 116: // jal 
-          jitarget = (PC & 0xF0000000) | (inst.immediate << 2);
-          inst.rd = 31;
-          inst.rdValue = PC + 8;
-          jump = true;
-          p("jitarget: " + Integer.toHexString(jitarget));
-          break;
-        case 117: // jalr
-          jrtarget = (int)(inst.rsValue & 0xFFFFFFFFL);
-          inst.rdValue = PC + 8;
-          jump = true;
-          p("jrtarget: " + Integer.toHexString(jrtarget));
-          break;
-        case 119: // jr 
-          jrtarget = (int)(inst.rsValue & 0xFFFFFFFFL);
-          jump = true;
-          p("jrtarget: " + Integer.toHexString(jrtarget));
-          break;
-        default:
-          jump = false;
-          jitarget = 0;
-          jrtarget = 0;
-          break;
+    private void jump_calc() { // FIX
+      switch (inst.opcode) {
+      case 115: // j
+        jitarget = ((PC & 0xF0000000) | inst.immediate);
+        jump = true;
+        p("jitarget: " + Integer.toHexString(jitarget));
+        break;
+      case 116: // jal
+        jitarget = (PC & 0xF0000000) | (inst.immediate << 2);
+        inst.rd = 31;
+        inst.rdValue = PC + 8;
+        jump = true;
+        p("jitarget: " + Integer.toHexString(jitarget));
+        break;
+      case 117: // jalr
+        jrtarget = (int) (inst.rsValue & 0xFFFFFFFFL);
+        inst.rdValue = PC + 8;
+        jump = true;
+        p("jrtarget: " + Integer.toHexString(jrtarget));
+        break;
+      case 119: // jr
+        jrtarget = (int) (inst.rsValue & 0xFFFFFFFFL);
+        jump = true;
+        p("jrtarget: " + Integer.toHexString(jrtarget));
+        break;
+      default:
+        jump = false;
+        jitarget = 0;
+        jrtarget = 0;
+        break;
       }
     }
   }
 
   private class Fetch extends Stage {
     public boolean stall;
+
     public Fetch() {
       super();
       stall = false;
@@ -1359,59 +1318,52 @@ trying:
     }
 
     public void step(Instruction inst, SPIMData data, Decode decode) {
-      
-      if(!stall) {
+
+      if (!stall) {
         if (decode.branch_taken) {
           p("branch_taken!");
           PC = decode.btarget;
-          //Value v = Value.createKnown(BitWidth.create(32), decode.btarget);
-          //data.regs[32] = v;
-          //PC = data.regs[32].toIntValue();
+          // Value v = Value.createKnown(BitWidth.create(32), decode.btarget);
+          // data.regs[32] = v;
+          // PC = data.regs[32].toIntValue();
         } else {
           if (decode.jump) {
-            if (execute.inst.is_ji()){
+            if (execute.inst.is_ji()) {
               PC = decode.jitarget;
-              //Value v = Value.createKnown(BitWidth.create(32), decode.jitarget);
-              //data.regs[32] = v;
-              //PC = data.regs[32].toIntValue();
+              // Value v = Value.createKnown(BitWidth.create(32), decode.jitarget);
+              // data.regs[32] = v;
+              // PC = data.regs[32].toIntValue();
               p("branch to jitarget:" + Integer.toHexString(decode.jitarget));
             } else if (execute.inst.is_jr()) {
               PC = decode.jrtarget;
-              //Value v = Value.createKnown(BitWidth.create(32), decode.jrtarget);
-              //data.regs[32] = v;
-              //PC = data.regs[32].toIntValue();
+              // Value v = Value.createKnown(BitWidth.create(32), decode.jrtarget);
+              // data.regs[32] = v;
+              // PC = data.regs[32].toIntValue();
               p("branch to jrtarget:" + Integer.toHexString(decode.jrtarget));
             }
           } else {
             /*
-            if (data.regs[32].toIntValue() == 0){
-              PC = 0;
-              Value v = Value.createKnown(BitWidth.create(32), 4);
-              data.regs[32] = v;
-              p("PC init");
-            } else {
-              PC = data.regs[32].toIntValue();
-              p("PC " + Integer.toHexString(PC));
-              Value v = Value.createKnown(BitWidth.create(32), PC+4);
-              data.regs[32] = v;
-              p("PC increment " + Integer.toHexString(PC));
-            }
-            */
+             * if (data.regs[32].toIntValue() == 0){ PC = 0; Value v =
+             * Value.createKnown(BitWidth.create(32), 4); data.regs[32] = v; p("PC init"); }
+             * else { PC = data.regs[32].toIntValue(); p("PC " + Integer.toHexString(PC));
+             * Value v = Value.createKnown(BitWidth.create(32), PC+4); data.regs[32] = v;
+             * p("PC increment " + Integer.toHexString(PC)); }
+             */
             PC += 4;
             p("PC increment " + Integer.toHexString(PC));
           }
         }
-        if (inst.valid()){
+        if (inst.valid()) {
           this.inst = inst;
-          inst.flush = false; // valid 
+          inst.flush = false; // valid
         }
       } else {
         p("pc = decode pc");
         PC = decode.PC;
-        //Value v = Value.createKnown(BitWidth.create(32), decode.PC);
-        //data.regs[32] = v;
-        //PC = data.regs[32].toIntValue();
-        if (inst.valid()){
+        // Value v = Value.createKnown(BitWidth.create(32), decode.PC);
+        // data.regs[32] = v;
+        // PC = data.regs[32].toIntValue();
+        if (inst.valid()) {
           this.inst = inst;
           inst.flush = false;
         }
@@ -1424,7 +1376,7 @@ trying:
     protected int PC;
 
     public Stage() {
-      inst = new Instruction("NOP");  
+      inst = new Instruction("NOP");
       PC = -4;
     }
   }
