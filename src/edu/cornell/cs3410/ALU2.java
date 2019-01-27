@@ -80,6 +80,7 @@ public class ALU2 extends InstanceFactory {
         state.setPort(3, out, 32);
         // int shift = state.getPortValue(3).toIntValue();
         int[] instOut = new int[numInsts];
+
         for (int i = 0; i < numInsts; i++) {
             // TODO: refactor
             instOut[i] = (op1 == instOpCodes[i]) && (op2 == instOpCodes2[i] || instOpCodes2[i] == -1)
@@ -93,6 +94,7 @@ public class ALU2 extends InstanceFactory {
                     break;
                 case 'R':
                     out = Value.createKnown(BitWidth.create(32), 0);
+                    useImmOut = 0;
                     break;
                 case 'S':
                     out = Value.createKnown(BitWidth.create(32),
@@ -119,7 +121,7 @@ public class ALU2 extends InstanceFactory {
 
         for (int i = 0; i < numInsts; i++) {
             out = Value.createKnown(BitWidth.create(32), instOut[i]);
-            state.setPort(i + 6, out, 32);
+            state.setPort(i + 7, out, 32);
         }
         // Value out = Value.createKnown(BitWidth.create(32), ans);
         // Value out = Value.createKnown(BitWidth.create(1), op != 0 ? 1:0);
