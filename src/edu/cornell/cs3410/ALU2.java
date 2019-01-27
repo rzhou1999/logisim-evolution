@@ -74,7 +74,7 @@ public class ALU2 extends InstanceFactory {
         		int useImmOut = 0;
         		switch (instType[i]) {
         		case 'I': out = Value.createKnown(BitWidth.create(32), (op >>> 20) ); useImmOut=1; break;
-        		case 'R': out = Value.createKnown(BitWidth.create(32), 0 ); break;
+        		case 'R': out = Value.createKnown(BitWidth.create(32), 0 ); useImmOut=0; break;
         		case 'S': out = Value.createKnown(BitWidth.create(32), ((op >>> 7) & 0b11111) | ((op>>>20) & 0b111111100000) ); useImmOut=1; break;
         		case 'B': out = Value.createKnown(BitWidth.create(32), ((op >>> 7)&0b11110) | ((op>>>20) & 0b10111111100000) | (((op>>>7)&0b1)<<12)    ); useImmOut=1;break;
         		case 'U': out = Value.createKnown(BitWidth.create(32), (op >>> 12)); useImmOut=1; break;
@@ -89,7 +89,7 @@ public class ALU2 extends InstanceFactory {
         
         for (int i=0; i<numInsts; i++) {
         	out = Value.createKnown(BitWidth.create(32), instOut[i]);
-        	state.setPort(i+6, out, 32);
+        	state.setPort(i+7, out, 32);
         }
         //Value out = Value.createKnown(BitWidth.create(32), ans);
         //Value out = Value.createKnown(BitWidth.create(1), op != 0 ? 1:0);
