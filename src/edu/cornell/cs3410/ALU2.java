@@ -15,6 +15,8 @@ import com.cburch.logisim.instance.Port;
 
 import com.cburch.logisim.util.GraphicsUtil;
 
+import org.graalvm.compiler.core.common.type.ArithmeticOpTable.IntegerConvertOp.SignExtend;
+
 public class ALU2 extends InstanceFactory {
 
     String[] insts = new String[] { "ADD", "ADDI", "SUB", "MUL", "AND", "ANDI", "OR", "ORI", "XOR", "XORI", "SLT",
@@ -55,6 +57,12 @@ public class ALU2 extends InstanceFactory {
         }
         setPorts(ports);
     }
+    
+    public static int signExtend(int val, int bits) {
+        int shift = 32 - bits;  // int always has 32 bits in Java
+        int s = val << shift;
+        return s >> shift;
+    }
 
     // Shifts A for risc-v not B
     @Override
@@ -80,46 +88,28 @@ public class ALU2 extends InstanceFactory {
         state.setPort(3, out, 32);
         // int shift = state.getPortValue(3).toIntValue();
         int[] instOut = new int[numInsts];
-
-        for (int i = 0; i < numInsts; i++) {
-            // TODO: refactor
-            instOut[i] = (op1 == instOpCodes[i]) && (op2 == instOpCodes2[i] || instOpCodes2[i] == -1)
-                    && (op3 == instOpCodes3[i] || instOpCodes3[i] == -1) ? 1 : 0;
-            if (instOut[i] == 1) { // Imm
-                int useImmOut = 0;
-                switch (instType[i]) {
-                case 'I':
-                    out = Value.createKnown(BitWidth.create(32), (op >>> 20));
-                    useImmOut = 1;
-                    break;
-                case 'R':
-                    out = Value.createKnown(BitWidth.create(32), 0);
-                    useImmOut = 0;
-                    break;
-                case 'S':
-                    out = Value.createKnown(BitWidth.create(32),
-                            ((op >>> 7) & 0b11111) | ((op >>> 20) & 0b111111100000));
-                    useImmOut = 1;
-                    break;
-                case 'B':
-                    out = Value.createKnown(BitWidth.create(32),
-                            ((op >>> 7) & 0b11110) | ((op >>> 20) & 0b10111111100000) | (((op >>> 7) & 0b1) << 12));
-                    useImmOut = 1;
-                    break;
-                case 'U':
-                    out = Value.createKnown(BitWidth.create(32), (op >>> 12));
-                    useImmOut = 1;
-                    break;
+        for (int i=0; i<numInsts; i++) {
+        	//TODO: refactor
+        	instOut[i] = (op1 == instOpCodes[i]) && (op2 == instOpCodes2[i] || instOpCodes2[i] == -1) && (op3 == instOpCodes3[i] || instOpCodes3[i] == -1) ? 1 : 0;
+        	if (instOut[i] == 1) { //Imm
+        		int useImmOut = 0;
+        		switch (instType[i]) {
+                case 'I': out = (insts[i] == "ADDI") 
+                    ? Value.createKnown(BitWidth.create(32), signExtend((op >>> 20), 12) )
+                    : Value.createKnown(BitWidth.create(32), (op >>> 20) ); 
+                    useImmOut=1; break;
+                case 'R': out = Value.createKnown(BitWidth.create(32), 0 ); useImmOut=0; break;
+        		case 'S': out = Value.createKnown(BitWidth.create(32), ((op >>> 7) & 0b11111) | ((op>>>20) & 0b111111100000) ); useImmOut=1; break;
+        		case 'B': out = Value.createKnown(BitWidth.create(32), ((op >>> 7)&0b11110) | ((op>>>20) & 0b10111111100000) | (((op>>>7)&0b1)<<12)    ); useImmOut=1;break;
+        		case 'U': out = Value.createKnown(BitWidth.create(32), (op >>> 12)); useImmOut=1; break;
                 }
-                state.setPort(4, out, 32);
 
-                // out = Value.createKnown(BitWidth.create(32), useImmOut);
-                out = Value.createKnown(BitWidth.create(1), useImmOut);
-                state.setPort(5, out, 32);
-
-                out = Value.createKnown(BitWidth.create(4), ALUOp[i]);
-                state.setPort(6, out, 32);
-            }
+        		state.setPort(4, out, 32);
+        		out = Value.createKnown(BitWidth.create(32), useImmOut );
+        		state.setPort(5, out, 32);
+        		out = Value.createKnown(BitWidth.create(4), ALUOp[i] );
+        		state.setPort(6, out, 32);
+        	}
         }
 
         for (int i = 0; i < numInsts; i++) {
