@@ -195,6 +195,7 @@ public class ProgramAssembler {
                                                                                                           // risc-v
                                                                                                           // register
                                                                                                           // names
+    static String __pc = "(pc|PC)";
     static String __hex = "0x[a-fA-F0-9]+";
     static String __decimal = "-?\\d+";
     static String __label = "[a-zA-Z]\\w*";
@@ -203,7 +204,7 @@ public class ProgramAssembler {
     static String _immNoLabel = "(" + __hex + "|" + __decimal + ")";
 
     // immediate regex that can be used for jumping
-    static String _imm = "(" + __hex + "|" + __decimal + "|" + __label + ")";
+    static String _imm = "(" + __hex + "|" + __decimal + "|" + __pc + "|" + __label + ")";
 
     private static int parseSegmentAddress(int lineno, String addr) throws IOException {
         if (addr.toLowerCase().startsWith("0x"))
@@ -371,6 +372,8 @@ public class ProgramAssembler {
                 throw new NumberFormatException();
             char c = imm.charAt(0);
             if (imm.equalsIgnoreCase("pc")) {
+                // Unsure about this functionality
+                // How do we encode PC into 32 bit instructions.
                 val = ((long) addr & 0xffffffffL) - offset;
             } else if (imm.toLowerCase().startsWith("0x")) {
                 val = Long.parseLong(imm.substring(2), 16);
@@ -503,11 +506,11 @@ public class ProgramAssembler {
     private static int reg(String r) throws NumberFormatException {
         /*
          * Register ABI Name Description Saver x0 zero Hard-wired zero — x1 ra Return
-         * address Caller x2 sp Stack pointer Callee x3 gp Global pointer — x4 tp T r
-         * ad pointer — x5–7 t0–2 Temporaries Caller x8 s0/fp Saved regis er/fr me
-         * pointer Callee x9 s1 Saved register Callee x10–11 a0–1 Fun tion arg
-         * ments/return val Caller x12–17 a2–7 Function arguments Cal er x18 27
-         * s2–11 Saved registers Callee x28–31 t3–6 Temporaries Cal er
+         * address Caller x2 sp Stack pointer Callee x3 gp Global pointer — x4 tp T r a
+         *  pointer — x5–7 t0–2 Temporaries Caller x8 s0/fp Saved regis er/fr me point
+         *  r Callee x9 s1 Saved register Callee x10–11 a0–1 Fun tion arg men
+         * s/return val Caller x12–17 a2–7 Function arguments Cal er x18 27 s2– 1
+         * Saved registers Callee x28–31 t3–6 Temporaries Cal er
          */
         int i = 0;
         switch (r.charAt(0)) {
@@ -585,7 +588,9 @@ public class ProgramAssembler {
         }
 
         String sImm(int instr) {
-            return "" + toHex((instr >> 20) & 0xfff, 3);
+            if (shift) {
+                return "" + toHex((instr >> 20) & 0x1f, 2);
+            } else return "" + toHex((instr >> 20) & 0xfff, 3);
         }
     }
 
@@ -624,10 +629,10 @@ public class ProgramAssembler {
         Type itype;
         boolean debug;
 
-        Load(String name, int op, int f3, boolean signed, boolean debug) {
+        Load(String name, int op, int f3, boolean debug) {
             super(name, op, f3);
             this.debug = debug;
-            itype = (signed ? Type.SIGNED_ABSOLUTE : Type.UNSIGNED_ABSOLUTE);
+            itype = Type.SIGNED_ABSOLUTE;
         }
 
         int encode(int lineno, int addr, String args, HashMap<String, Integer> sym) throws IOException {
@@ -890,7 +895,7 @@ public class ProgramAssembler {
         }
 
         String sImm(int instr) {
-            return "" + toHex((instr >> 20) & 0xfff, 3);
+            return "" + toHex((instr >> 12) & 0xfffff, 5);
         }
     }
 
@@ -974,11 +979,11 @@ public class ProgramAssembler {
         new Nop("nop", 0x0);
         new Syscall("syscall", 0x10);
         new Eret("eret", 0x8);
-        new Load("lb", 0x3, 0, false, false);
-        new Load("lh", 0x3, 1, false, false);
-        new Load("lw", 0x3, 2, false, true);
-        new Load("lbu", 0x3, 4, false, false);
-        new Load("lhu", 0x3, 5, false, false);
+        new Load("lb", 0x3, 0, false);
+        new Load("lh", 0x3, 1, false);
+        new Load("lw", 0x3, 2, false);
+        new Load("lbu", 0x3, 4, false);
+        new Load("lhu", 0x3, 5, false);
         // new Branch("b", 0x63, 0, true); // need to implement fully, movi,rd,imm
         new Branch("beq", 0x63, 0, true);
         new Branch("bne", 0x63, 1, false);
