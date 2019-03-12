@@ -83,7 +83,7 @@ public class ALU2 extends InstanceFactory {
                 state.setPort(1, out, 32);
         		int useImmOut = 0;
         		switch (instType[i]) {
-                case 'I': out = (insts[i] == "ADDI" || insts[i] == "ANDI" || insts[i] == "ORI" || insts[i] == "XORI") 
+                case 'I': out = (insts[i] == "ADDI" || insts[i] == "ANDI" || insts[i] == "ORI" || insts[i] == "XORI" || insts[i] == "SLTI" || insts[i] == "SLTIU") 
                     ? Value.createKnown(BitWidth.create(32), signExtend((op >>> 20), 12) )
                     : Value.createKnown(BitWidth.create(32), (op >>> 20) ); 
                     useImmOut=1; break;
