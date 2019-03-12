@@ -47,10 +47,10 @@ public class Bypass extends InstanceFactory {
         if (MWwen==1 && MWrd!=0 && !(XMwen==1 && XMrd!=0 && XMrd==rs2) && MWrd==rs2) {
         	FB = 0b01;
         }
-        if (XMwen==1 && MWrd!=0 && XMrd==rs1) {  // Should be XMrd not MWrd
+        if (XMwen==1 && XMrd!=0 && XMrd==rs1) {  // Should be XMrd not MWrd
         	FA = 0b10;
         }
-        if (XMwen==1 && MWrd!=0 && XMrd==rs2) {  // Should be XMrd not MWrd
+        if (XMwen==1 && XMrd!=0 && XMrd==rs2) {  // Should be XMrd not MWrd
         	FB = 0b10;
         }
 
