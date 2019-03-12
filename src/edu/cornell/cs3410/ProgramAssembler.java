@@ -195,7 +195,7 @@ public class ProgramAssembler {
                                                                                                           // risc-v
                                                                                                           // register
                                                                                                           // names
-    static String __pc = "(pc|PC)";
+    static String __pc = "(?:pc|PC)";
     static String __hex = "0x[a-fA-F0-9]+";
     static String __decimal = "-?\\d+";
     static String __label = "[a-zA-Z]\\w*";
@@ -387,6 +387,11 @@ public class ProgramAssembler {
                 return (int) (val & mask);
             } else if ((c == '-') || (c >= '0' && c <= '9')) {
                 // for integer immediates
+                if (type == Type.UNSIGNED_ABSOLUTE && c == '-') {
+                    // TODO: Finish fixing the unsigned - value conversion
+                    min = -1 * max - 1;
+                }
+
                 val = Long.parseLong(imm);
             } else {
                 Integer a = sym.get(imm);
@@ -508,9 +513,9 @@ public class ProgramAssembler {
          * Register ABI Name Description Saver x0 zero Hard-wired zero — x1 ra Return
          * address Caller x2 sp Stack pointer Callee x3 gp Global pointer — x4 tp T r a
          *  pointer — x5–7 t0–2 Temporaries Caller x8 s0/fp Saved regis er/fr me point
-         *  r Callee x9 s1 Saved register Callee x10–11 a0–1 Fun tion arg men
-         * s/return val Caller x12–17 a2–7 Function arguments Cal er x18 27 s2– 1
-         * Saved registers Callee x28–31 t3–6 Temporaries Cal er
+         *  r Callee x9 s1 Saved register Callee x10–11 a0–1 Fun tion arg men s/r
+         *  turn val Caller x12–17 a2–7 Function arguments Cal er x18 27 s2– 1 Saved
+         *  registers Callee x28–31 t3–6 Temporaries Cal er
          */
         int i = 0;
         switch (r.charAt(0)) {
@@ -568,6 +573,12 @@ public class ProgramAssembler {
                 if ((src & 0x1f) != src) {
                     throw new ParseException("Line " + (lineno + 1) + ": invalid source register: x" + src);
                 }
+
+                // 3/10/2019
+                if (shift && (imm > 31 || imm < 0)) {
+                    throw new ParseException("Line " + (lineno + 1) + " Invalid Immediate:" + imm + " for Shift");
+                }
+
                 if (shift && name.charAt(2) == 'a') {
                     return (1 << 30) | (imm << 20) | (src << 15) | (func3 << 12) | (dest << 7) | opcode;
                 }
@@ -590,7 +601,8 @@ public class ProgramAssembler {
         String sImm(int instr) {
             if (shift) {
                 return "" + toHex((instr >> 20) & 0x1f, 2);
-            } else return "" + toHex((instr >> 20) & 0xfff, 3);
+            } else
+                return "" + toHex((instr >> 20) & 0xfff, 3);
         }
     }
 
