@@ -15,7 +15,7 @@ import com.cburch.logisim.instance.Port;
 
 import com.cburch.logisim.util.GraphicsUtil;
 
-import org.graalvm.compiler.core.common.type.ArithmeticOpTable.IntegerConvertOp.SignExtend;
+// import org.graalvm.compiler.core.common.type.ArithmeticOpTable.IntegerConvertOp.SignExtend;
 
 public class ALU2 extends InstanceFactory {
 
