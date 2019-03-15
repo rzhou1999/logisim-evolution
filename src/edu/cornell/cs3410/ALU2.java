@@ -19,18 +19,18 @@ import com.cburch.logisim.util.GraphicsUtil;
 
 public class ALU2 extends InstanceFactory {
 
-    String[] insts = new String[] {  "ADD",     "ADDI",     "SUB",      "MUL",      "AND",      "ANDI",     "OR",       "ORI",      "XOR",      "XORI",     "SLT",      "SLTI",     "SLTU",     "SLTIU",    "SRA",      "SRAI",     "SRL",      "SRLI",     "SLL",      "SLLI",     "LUI",      "AUIPC",    "LW",       "SW",       "JAL",      "JALR",     "BEQ",      "BNE",      "BLT",      "BGE",      "BLTU",     "BGEU" };
-    int[] instOpCodes = new int[] {  0b0110011, 0b0010011,  0b0110011,  0b0110011,  0b0110011,  0b0010011,  0b0110011,  0b0010011,  0b0110011,  0b0010011,  0b0110011,  0b0010011,  0b0110011,  0b0010011,  0b0110011,  0b0010011,  0b0110011,  0b0010011,  0b0110011,  0b0010011,  0b0110111,  0b0010111,  0b0000011,  0b0100011,  0b1101111,  0b1100111,  0b1100011,  0b1100011,  0b1100011,  0b1100011,  0b1100011,  0b1100011 };
-    int[] instOpCodes2 = new int[] { 0b000,     0b000,      0b000,      0b000,      0b111,      0b111,      0b110,      0b110,      0b100,      0b100,      0b010,      0b010,      0b011,      0b011,      0b101,      0b101,      0b101,      0b101,      0b001,      0b001,      -1,         -1,         0b010,      0b010,      -1,         0b000,      0b000,      0b001,      0b100,      0b101,      0b110,      0b111 };
-    int[] instOpCodes3 = new int[] { 0b0000000, -1,         0b0100000,  0b0000001,  0b0000000,  -1,         0b0000000,  -1,         0b0000000,  -1,         0b0000000,  -1,         0b0000000,  -1,         0b0100000,  0b0100000,  0b0000000,  0b0000000,  0b0000000,  0b0000000,  -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1 };
-    char[] instType = new char[] {   'R',       'I',        'R',        'R',        'R',        'I',        'R',        'I',        'R',        'I',        'R',        'I',        'R',        'I',        'R',        'I',        'R',        'I',        'R',        'I',        'U',        'U',        'I',        'W',        'U',        'I',        'B',        'B',        'B',        'B',        'B',        'B' };
-    int[] ALUOp = new int[] {        0b1000,    0b1000,     0b1100,     0b0000,     0b0011,     0b0011,     0b0001,     0b0001,     0b0111,     0b0111,     0b010,      0b0000,     0b0000,     0b0000,     0b1111,     0b1111,     0b1110,     0b1110,     0b1010,     0b1010,     0b1010,     0b1000,     0b0000,     0b0000,     0b0000,     0b0000,     0b0000,     0b0000,     0b0000,     0b0000,     0b0000,     0b0000 };
+    String[] insts = new String[] {  "ADD",     "ADDI",     "SUB",      "MUL",      "AND",      "ANDI",     "OR",       "ORI",      "XOR",      "XORI",     "SLT",      "SLTI",     "SLTU",     "SLTIU",    "SRA",      "SRAI",     "SRL",      "SRLI",     "SLL",      "SLLI",     "LUI",      "AUIPC",    "LW",       "SW",       "JAL",      "JALR",     "BEQ",      "BNE",      "BLT",      "BGE",      "BLTU",     "BGEU",     "LB",       "SB"};
+    int[] instOpCodes = new int[] {  0b0110011, 0b0010011,  0b0110011,  0b0110011,  0b0110011,  0b0010011,  0b0110011,  0b0010011,  0b0110011,  0b0010011,  0b0110011,  0b0010011,  0b0110011,  0b0010011,  0b0110011,  0b0010011,  0b0110011,  0b0010011,  0b0110011,  0b0010011,  0b0110111,  0b0010111,  0b0000011,  0b0100011,  0b1101111,  0b1100111,  0b1100011,  0b1100011,  0b1100011,  0b1100011,  0b1100011,  0b1100011,  0b0000011,  0b0100011};
+    int[] instOpCodes2 = new int[] { 0b000,     0b000,      0b000,      0b000,      0b111,      0b111,      0b110,      0b110,      0b100,      0b100,      0b010,      0b010,      0b011,      0b011,      0b101,      0b101,      0b101,      0b101,      0b001,      0b001,      -1,         -1,         0b010,      0b010,      -1,         0b000,      0b000,      0b001,      0b100,      0b101,      0b110,      0b111,      0b000,      0b000};
+    int[] instOpCodes3 = new int[] { 0b0000000, -1,         0b0100000,  0b0000001,  0b0000000,  -1,         0b0000000,  -1,         0b0000000,  -1,         0b0000000,  -1,         0b0000000,  -1,         0b0100000,  0b0100000,  0b0000000,  0b0000000,  0b0000000,  0b0000000,  -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1};
+    char[] instType = new char[] {   'R',       'I',        'R',        'R',        'R',        'I',        'R',        'I',        'R',        'I',        'R',        'I',        'R',        'I',        'R',        'I',        'R',        'I',        'R',        'I',        'U',        'U',        'I',        'W',        'U',        'I',        'B',        'B',        'B',        'B',        'B',        'B',        'I',        'S'};
+    int[] ALUOp = new int[] {        0b1000,    0b1000,     0b1100,     0b0000,     0b0011,     0b0011,     0b0001,     0b0001,     0b0111,     0b0111,     0b010,      0b0000,     0b0000,     0b0000,     0b1111,     0b1111,     0b1110,     0b1110,     0b1010,     0b1010,     0b1000,     0b1000,     0b0000,     0b0000,     0b0000,     0b0000,     0b0000,     0b0000,     0b0000,     0b0000,     0b0000,     0b0000,     0b0000,     0b0000};
     int numInsts = insts.length;
 
     public ALU2() {
         super("Decode Black Box");
         assert insts.length == instOpCodes.length;
-        setOffsetBounds(Bounds.create(-30, -50, 60, 400));
+        setOffsetBounds(Bounds.create(-30, -50, 60, 410));
         Port[] ports = new Port[numInsts + 7];
         ports[0] = new Port(-20, -50, Port.OUTPUT, 5);
         ports[1] = new Port(0, -50, Port.OUTPUT, 5);
@@ -79,7 +79,7 @@ public class ALU2 extends InstanceFactory {
         	instOut[i] = (op1 == instOpCodes[i]) && (op2 == instOpCodes2[i] || instOpCodes2[i] == -1) && (op3 == instOpCodes3[i] || instOpCodes3[i] == -1) ? 1 : 0;
             if (instOut[i] == 1) { //Imm
                 // rs2
-                out = Value.createKnown(BitWidth.create(32), ((insts[i] == "LUI" || insts[i] == "AUIPC") ? 0xc : (op >>> 20) & 0b11111) );
+                out = Value.createKnown(BitWidth.create(32), ((insts[i] == "LUI" || insts[i] == "AUIPC") ? ALUOp[i] : (op >>> 20) & 0b11111) );
                 state.setPort(1, out, 32);
         		int useImmOut = 0;
         		switch (instType[i]) {
@@ -90,7 +90,7 @@ public class ALU2 extends InstanceFactory {
                 case 'R': out = Value.createKnown(BitWidth.create(32), 0 ); useImmOut=0; break;
         		case 'S': out = Value.createKnown(BitWidth.create(32), ((op >>> 7) & 0b11111) | ((op>>>20) & 0b111111100000) ); useImmOut=1; break;
         		case 'B': out = Value.createKnown(BitWidth.create(32), ((op >>> 7)&0b11110) | ((op>>>20) & 0b10111111100000) | (((op>>>7)&0b1)<<12)    ); useImmOut=1;break;
-        		case 'U': out = Value.createKnown(BitWidth.create(32), (op >>> 12)); useImmOut=1; break;
+        		case 'U': out = Value.createKnown(BitWidth.create(32), (op & 0xFFFFF000)); useImmOut=1; break;
                 }
 
                 state.setPort(4, out, 32);
