@@ -850,9 +850,13 @@ public class ProgramAssembler {
             }
 
             int imm = resolve(lineno, m.group(3), addr, sym, Type.SIGNED_ABSOLUTE, 12);
+
             Matcher n = pat_LabBr.matcher(args);
-            if (n.matches())
+            if (n.matches()) {
                 imm = (imm - addr) & 0xfff;
+                imm >>>= 1;
+            }
+
             int imm12 = (imm >> 11) & 1;
             int imm10_5 = (imm >> 4) & 0x3f;
             int imm4_1 = imm & 0xf;
@@ -917,6 +921,7 @@ public class ProgramAssembler {
      * of a hex or decimal number or a label. This immediate is 20 bits long.
      */
     static Pattern pat_jal = Pattern.compile(_reg + "," + _imm);
+    static Pattern label_jal = Pattern.compile(_reg + "," + __label);
 
     private static class JumpInstance extends Command {
         JumpInstance(String name, int op) {
@@ -933,14 +938,22 @@ public class ProgramAssembler {
             try {
                 // If the argument matches this jal pattern then continue else throw an
                 // exception
+                Matcher label = label_jal.matcher(args);
                 Matcher m = pat_jal.matcher(args);
+
                 if (!m.matches()) {
                     throw new ParseException(
                             "Line " + (lineno + 1) + ": '" + name + "' expects xD, Imm with args: " + args);
                 }
 
-                // resolve the matched immediate to a 20 bit immediate
-                int imm = resolve(lineno, m.group(2), addr, sym, Type.SIGNED_ABSOLUTE, 20);
+                // resolve the matched immediate to a 20 bit immediate, use SIGNED_RELATIVE
+                int imm = resolve(lineno, m.group(2), addr, sym, Type.SIGNED_RELATIVE, 20);
+
+                // If Jal uses Label then divide by 2
+                if (label.matches()) {
+                    imm += 4;
+                    imm >>>= 1;
+                }
 
                 // get the destination register and check for validity
                 int dest = reg(m.group(1));
