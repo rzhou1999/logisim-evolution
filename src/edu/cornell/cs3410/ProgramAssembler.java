@@ -394,6 +394,7 @@ public class ProgramAssembler {
 
                 val = Long.parseLong(imm);
             } else {
+                // If control instruction uses Label, get address of label
                 Integer a = sym.get(imm);
                 if (a == null)
                     throw new ParseException("Line " + (lineno + 1) + ": expecting " + type
@@ -513,9 +514,9 @@ public class ProgramAssembler {
          * Register ABI Name Description Saver x0 zero Hard-wired zero — x1 ra Return
          * address Caller x2 sp Stack pointer Callee x3 gp Global pointer — x4 tp T r a
          *  pointer — x5–7 t0–2 Temporaries Caller x8 s0/fp Saved regis er/fr me point
-         *  r Callee x9 s1 Saved register Callee x10–11 a0–1 Fun tion arg men s/r
-         *  turn val Caller x12–17 a2–7 Function arguments Cal er x18 27 s2– 1 Saved
-         *  registers Callee x28–31 t3–6 Temporaries Cal er
+         *  Callee x9 s1 Saved register Callee x10–11 a0–1 Fun tion arg men s/r rn 
+         *  al Caller x12–17 a2–7 Function arguments Cal er x18 27 s2– 1 Saved s
+         * ers Callee x28–31 t3–6 Temporaries Cal er
          */
         int i = 0;
         switch (r.charAt(0)) {
@@ -835,7 +836,8 @@ public class ProgramAssembler {
             int i4_1 = (instr >>> 8) & 0xf;
             int i11 = (instr >>> 7) & 1;
             int imm = (i12 << 11) | (i11 << 10) | (i10_5 << 4) | i4_1;
-            return "" + toHex(imm & 0xfff, 3);
+            imm <<= 1;
+            return "" + toHex(imm & 0x1fff, 4);
         }
 
         String decode(int addr, int instr) {
@@ -849,13 +851,14 @@ public class ProgramAssembler {
                         "Line " + (lineno + 1) + ": '" + name + "' expects xS, xT, Imm ;with args: " + args);
             }
 
-            int imm = resolve(lineno, m.group(3), addr, sym, Type.SIGNED_ABSOLUTE, 12);
+            // Resolve the 13 bit immediate
+            int imm = resolve(lineno, m.group(3), addr, sym, Type.SIGNED_ABSOLUTE, 13);
 
             Matcher n = pat_LabBr.matcher(args);
             if (n.matches()) {
-                imm = (imm - addr) & 0xfff;
-                imm >>>= 1;
+                imm = imm - addr;
             }
+            imm = (imm >>> 1) & 0xfff;
 
             int imm12 = (imm >> 11) & 1;
             int imm10_5 = (imm >> 4) & 0x3f;
@@ -936,8 +939,7 @@ public class ProgramAssembler {
 
         int encode(int lineno, int addr, String args, HashMap<String, Integer> sym) throws IOException {
             try {
-                // If the argument matches this jal pattern then continue else throw an
-                // exception
+                // If the argument matches this jal pattern then continue else throw an exception
                 Matcher label = label_jal.matcher(args);
                 Matcher m = pat_jal.matcher(args);
 
@@ -946,14 +948,16 @@ public class ProgramAssembler {
                             "Line " + (lineno + 1) + ": '" + name + "' expects xD, Imm with args: " + args);
                 }
 
-                // resolve the matched immediate to a 20 bit immediate, use SIGNED_RELATIVE
-                int imm = resolve(lineno, m.group(2), addr, sym, Type.SIGNED_RELATIVE, 20);
+                // resolve the matched immediate to a 21 bit immediate, we assume Imm[0] is 0
+                int imm = resolve(lineno, m.group(2), addr, sym, Type.SIGNED_ABSOLUTE, 21);
 
-                // If Jal uses Label then divide by 2
+                // If Jal uses Label then subtract address offset
                 if (label.matches()) {
-                    imm += 4;
-                    imm >>>= 1;
+                    imm = (imm - addr);
                 }
+
+                // Shift 21 bit immediate over by 1 to fit in encoding
+                imm = (imm >>> 1) & 0xfffff;
 
                 // get the destination register and check for validity
                 int dest = reg(m.group(1));
@@ -964,13 +968,13 @@ public class ProgramAssembler {
 
                 // Adjust immediates to be in correct bit positions for RISC-V
                 // well formed encoding: i[19] | i[9:0] | i[10] | i[18:11] | rd | opcode
-                int i19 = ((imm >>> 19) & 1) << 31;
-                int i9_0 = (imm & 0x1ff) << 21;
-                int i10 = ((imm >>> 9) & 1) << 20;
-                int i18_11 = ((imm >>> 10) & 0xff) << 12;
+                int i20 = ((imm >>> 19) & 1) << 31;
+                int i10_1 = (imm & 0x1ff) << 21;
+                int i11 = ((imm >>> 9) & 1) << 20;
+                int i19_12 = ((imm >>> 10) & 0xff) << 12;
 
                 // return well formed encoding
-                return i19 | i9_0 | i10 | i18_11 | (dest << 7) | opcode;
+                return i20 | i10_1 | i11 | i19_12 | (dest << 7) | opcode;
             } catch (NumberFormatException e) {
                 // If exception is caught then throw a logisim error message
                 Matcher m = pat_jal.matcher(args);
@@ -987,14 +991,15 @@ public class ProgramAssembler {
 
         String sImm(int instr) {
             // determine immediate
-            int i18_11 = (instr >>> 12) & 0xff;
-            int i10 = (instr >>> 20) & 1;
-            int i9_0 = (instr >>> 21) & 0x1ff;
-            int i19 = (instr >>> 31) & 1;
-            int imm = (i19 << 18) | (i18_11 << 10) | (i10 << 9) | i9_0;
+            int i19_12 = (instr >>> 12) & 0xff;
+            int i11 = (instr >>> 20) & 1;
+            int i10_1 = (instr >>> 21) & 0x1ff;
+            int i20 = (instr >>> 31) & 1;
+            int imm = (i20 << 18) | (i19_12 << 10) | (i11 << 9) | i10_1;
 
-            // return immediate as string in hex formatting
-            return "" + toHex(imm & 0xfffff, 5);
+            imm <<= 1;
+            // return 21 bit immediate as string in hex formatting
+            return "" + toHex(imm & 0x1fffff, 6);
         }
     }
 
