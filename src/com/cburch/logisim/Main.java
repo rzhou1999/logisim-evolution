@@ -92,7 +92,7 @@ public class Main {
 	final static Logger logger = LoggerFactory.getLogger(Main.class);
 
 	// Updated 3/16/2019 - Akhil Bhandaru for P3
-	public static final LogisimVersion VERSION = LogisimVersion.get(2, 14, 7, 10);
+	public static final LogisimVersion VERSION = LogisimVersion.get(2, 14, 7, 8);
 
 	public static final String VERSION_NAME = VERSION.toString();
 	public static final int COPYRIGHT_YEAR = 2018;
@@ -109,6 +109,6 @@ public class Main {
 	/**
 	 * URL for the automatic updater
 	 */
-	public static final String UPDATE_URL = "http://www.cs.cornell.edu/courses/cs3410/2019sp/logisim/logisim_evolution_version.xml";
+	public static final String UPDATE_URL = "https://randyzhou.com/test1.xml";
 
 }
