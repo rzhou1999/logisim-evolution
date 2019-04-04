@@ -69,6 +69,7 @@ import javax.swing.JMenuItem;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.AbstractAction;
+import com.cburch.logisim.data.Attribute;
 
 import com.bfh.logisim.hdlgenerator.HDLColorRenderer;
 import com.cburch.logisim.prefs.AppPreferences;
@@ -524,13 +525,21 @@ public class AttrTable extends JPanel implements LocaleListener {
 	//=============================
 	class PopUp extends JPopupMenu {
 		JMenuItem setAll;
-		public PopUp() {
-				setAll = new JMenuItem(new AbstractAction("Set all to...") {
+		public PopUp(final MouseEvent em) {
+				setAll = new JMenuItem(new AbstractAction("Set all selected to...") {
 				    public void actionPerformed(ActionEvent e) {
-				        String ans = JOptionPane.showInputDialog("Set to what val?");
-								if (ans == null) return;
+
+							JComboBox comboBox = (JComboBox) tableModel.attrModel.getRow(table.rowAtPoint(em.getPoint())).getEditor(parent);
+
+							Object[] content = {"Set to what val?","Currently changing " + Integer.toString(table.getSelectedRows().length) + " attributes.",comboBox};
+
+							int confirm = JOptionPane.showConfirmDialog(null,
+						    content,"Batch change",JOptionPane.OK_CANCEL_OPTION);
+
+								if (confirm == JOptionPane.CANCEL_OPTION) return;
 
 								try {
+									Object ans = comboBox.getSelectedItem();
 									for(int a: table.getSelectedRows()) tableModel.attrModel.getRow(a).setValue(ans);
 								} catch (AttrTableSetException ex) {
 									JOptionPane.showMessageDialog(parent, ex.getMessage(),
@@ -544,19 +553,29 @@ public class AttrTable extends JPanel implements LocaleListener {
 		}
 	}
 
+	public boolean arrContains(int[] arr, int n){
+		for(int i = 0; i< arr.length; i++){
+			if (arr[i]==n) return true;
+		}
+		return false;
+	}
+
 	class PopUpTrigger extends MouseAdapter {
 	    public void mousePressed(MouseEvent e) {
-	        if (e.isPopupTrigger())
-	            showPopUp(e);
+	        if (e.isPopupTrigger()){
+	            	showPopUp(e);
+						}
 	    }
 
 	    public void mouseReleased(MouseEvent e) {
-	        if (e.isPopupTrigger())
-	            showPopUp(e);
+	        if (e.isPopupTrigger()){
+	            	showPopUp(e);
+						}
 	    }
 
 	    private void showPopUp	(MouseEvent e) {
-	        PopUp menu = new PopUp();
+	        PopUp menu = new PopUp(e);
+					menu.setAll.setEnabled(arrContains(table.getSelectedRows(), table.rowAtPoint(e.getPoint())));
 	        menu.show(e.getComponent(), e.getX(), e.getY());
 	    }
 	}
